@@ -53,13 +53,13 @@ class JPA(object):
         I_c : float
             Critical current of the SQUID in ampere.
         phi_s : float
-            Amplitude of the signal.
+            Amplitude of the signal in rad.
         phi_dc : float
-            DC amplitude of the pump.
+            DC amplitude of the pump in weber.
         phi_ac : float
-            AC amplitude of the pump.
+            AC amplitude of the pump in weber.
         theta_p : float
-            Phase of the pump in rad
+            Phase of the pump in rad.
         theta_s : float, optional
             Phase of the pump in rad, default is zero which implies that that\
             the signal phase is the reference.
@@ -67,22 +67,21 @@ class JPA(object):
         Raises
         ------
         ValueError
-            If the parameters are not in the good type
-
+            If the parameters are not in the good type.
         """
 
         if type(I_c) is not float:
-            raise ValueError('I_c parameter must be float type')
+            raise ValueError('I_c parameter must be float type.')
         if type(phi_s) is not float:
             raise ValueError('phi_s parameter must be float type')
         if type(phi_dc) is not float:
-            raise ValueError('phi_dc parameter must be float type')
+            raise ValueError('phi_dc parameter must be float type.')
         if type(phi_ac) is not float:
-            raise ValueError('phi_ac parameter must be float type')
+            raise ValueError('phi_ac parameter must be float type.')
         if type(theta_p) is not float:
-            raise ValueError('theta_p parameter must be float type')
+            raise ValueError('theta_p parameter must be float type.')
         if type(theta_s) is not float:
-            raise ValueError('theta_s parameter must be float type')
+            raise ValueError('theta_s parameter must be float type.')
 
         self.I_c     = I_c
         self.phi_s   = phi_s
@@ -124,7 +123,7 @@ class JPA(object):
 
     def josephson_inductance(self):
         """
-        Return the Josephson inductance in henry
+        Return the Josephson inductance in henry.
         """
 
         return cst.hbar*self.phi_s\
@@ -147,7 +146,7 @@ class JPA(object):
     def squid_inductance(self):
         """
         Return the squid inductance which is simply the parallel sum of the
-        pumpistor and the Josephson indutance
+        pumpistor and the Josephson indutance.
         """
 
         return 1./(  1./self.josephson_inductance()\
@@ -167,11 +166,11 @@ class JPA(object):
         Raises
         ------
         ValueError
-            If the parameters are not in the good type
+            If the parameters are not in the good type.
         """
 
         if type(f) not in (float, np.ndarray):
-            raise ValueError('f parameter must be float or np.ndarray type')
+            raise ValueError('f parameter must be float or np.ndarray type.')
 
         return 1j*f*2.*np.pi*self.pumpistor_inductance()
 
@@ -189,11 +188,11 @@ class JPA(object):
         Raises
         ------
         ValueError
-            If the parameters are not in the good type
+            If the parameters are not in the good type.
         """
 
         if type(f) not in (float, np.ndarray):
-            raise ValueError('f parameter must be float or np.ndarray type')
+            raise ValueError('f parameter must be float or np.ndarray type.')
 
         return 1j*f*2.*np.pi*self.josephson_inductance()
 
