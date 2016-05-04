@@ -128,7 +128,7 @@ class JPA(object):
         """
 
         return cst.hbar*self.phi_s\
-               /2./cst.e/self.Ic/np.cos(self.F())/2./jv(1., self.phi_s)
+               /2./cst.e/self.I_c/np.cos(self.F())/2./jv(1., self.phi_s)
 
 
 
@@ -138,7 +138,7 @@ class JPA(object):
         """
 
         return -2.*np.exp(1j*self.delta_theta())/self.delta_f()\
-               *cst.hbar/2./cst.e/self.Ic/np.sin(self.F())\
+               *cst.hbar/2./cst.e/self.I_c/np.sin(self.F())\
                *self.phi_s/(2.*jv(1., self.phi_s)\
                             - 2.*np.exp(2j*self.delta_theta())*jv(3., self.phi_s))
 
