@@ -157,7 +157,7 @@ class JPA(object):
 
     def pumpistor_impedance(self, f):
         """
-        Return the pumpistor inductance.
+        Return the pumpistor impedance.
 
         Parameters
         ----------
@@ -179,7 +179,7 @@ class JPA(object):
 
     def josephson_impedance(self, f):
         """
-        Return the Josephson inductance.
+        Return the Josephson impedance.
 
         Parameters
         ----------
@@ -201,7 +201,7 @@ class JPA(object):
 
     def squid_impedance(self, f):
         """
-        Return the squid inductance.
+        Return the squid impedance.
 
         Parameters
         ----------
