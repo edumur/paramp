@@ -30,7 +30,6 @@ import numpy as np
 import scipy.constants as cst
 from scipy.optimize import fsolve
 import scipy.optimize as opt
-import matplotlib.pyplot as plt
 
 from JPA import JPA
 
@@ -269,7 +268,7 @@ class LJPA(JPA):
 
         f0 = self.resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(p.reflection(f))**2.
+        y = abs(self.reflection(f))**2.
         half_max = y.max()/2
         f1 = f[abs(y[:len(y)/2] - half_max).argmin()]
         f2 = f[len(y)/2 + abs(y[len(y)/2:] - half_max).argmin()]
@@ -291,7 +290,7 @@ class LJPA(JPA):
 
         o0 = self.resonance_frequency()
         o = np.linspace(o0-span/2., o0+span/2., 1e6)
-        y = abs(p.reflection(o))**2.
+        y = abs(self.reflection(o))**2.
 
         return o[y.argmax()]
 
@@ -310,7 +309,7 @@ class LJPA(JPA):
 
         f0 = self.resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(p.reflection(f))**2.
+        y = abs(self.reflection(f))**2.
 
         return f[y.argmax()]
 
@@ -357,7 +356,7 @@ class LJPA(JPA):
 
         f0 = self.resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(p.reflection(f))**2.
+        y = abs(self.reflection(f))**2.
 
         if scale.lower() == 'log':
             return 10.*np.log10(y.max())
