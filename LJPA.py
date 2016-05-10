@@ -255,10 +255,11 @@ class LJPA(JPA):
 
 
 
-    def find_fwhm(self, span=10e9):
+    def find_reflection_fwhm(self, span=10e9):
         """
         Return the half width at half maximum in Hz of the power reflection.
-        Numerically estimated.
+        Numerically estimated by looking for frequency at which imag(impedance)
+        is zero.
 
         Parameters
         ----------
@@ -280,26 +281,8 @@ class LJPA(JPA):
     def find_angular_resonance_frequency(self, span=10e9):
         """
         Return the angular resonance frequency in Hz of the power reflection.
-        Numerically estimated.
-
-        Parameters
-        ----------
-        span : float, optional
-            The span in which the fwhm is calculated in Hz.
-        """
-
-        o0 = self.resonance_frequency()
-        o = np.linspace(o0-span/2., o0+span/2., 1e6)
-        y = abs(self.reflection(o))**2.
-
-        return o[y.argmax()]
-
-
-
-    def find_resonance_frequency(self, span=10e9):
-        """
-        Return the resonance frequency in Hz of the power reflection.
-        Numerically estimated.
+        Numerically estimated by looking for frequency at which imag(impedance)
+        is zero.
 
         Parameters
         ----------
@@ -309,9 +292,29 @@ class LJPA(JPA):
 
         f0 = self.resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(self.reflection(f))**2.
+        y = abs(self.impedance(f).imag)
 
-        return f[y.argmax()]
+        return f[y.argmin()]
+
+
+
+    def find_resonance_frequency(self, span=10e9):
+        """
+        Return the resonance frequency in Hz of the power reflection.
+        Numerically estimated by looking for frequency at which imag(impedance)
+        is zero.
+
+        Parameters
+        ----------
+        span : float, optional
+            The span in which the fwhm is calculated in Hz.
+        """
+
+        f0 = self.resonance_frequency()
+        f = np.linspace(f0-span/2., f0+span/2., 1e6)
+        y = abs(self.impedance(f).imag)
+
+        return f[y.argmin()]
 
 
 
