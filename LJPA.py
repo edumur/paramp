@@ -387,49 +387,137 @@ class LJPA(JPA):
 
 
 
-    def test(self, f0, Qc, update_parameters=False):
+    def optimized_LJPA(self, f0, Qc,
+                             update_parameters=False,
+                             full_output=False,
+                             verbose=False,
+                             method='Nelder-Mead'):
         """
-            Work on progress:
-                Find parameters for given f0 and Qc.
+        Optimized the different parameters of the LJPA to reached a target
+        frequency and coupling quality factor.
+        This is done by minimizing the relative error of three values:
+            1 - the resonance frequency,
+            2 - the coupling quality factor,
+            3 - the absolute difference between the coupling and internal
+                quality factor.
+
+        Parameters
+        ----------
+        f0 : float
+            Target resonance frequency in GHz.
+        Qc : float
+            Target coupling quality factor.
+        update_parameters : bool, optional
+            If the differents parameters found after the optimization are set
+            to be the parameters of the LPJA instance.
+        full_output : bool, optional
+            To return all optional output, if not, return just the parameters.
+        verbose : bool, optional
+            To print parameters, targets value and least square value during
+            optimization.
+        method : str, optional
+            Type of solver. Should be one of
+                'Nelder-Mead' - default
+                'Powell'
+                'CG'
+                'BFGS'
+                'Newton-CG'
+                'L-BFGS-B'
+                'TNC'
+                'COBYLA'
+                'SLSQP'
+                'dogleg'
+                'trust-ncg'
+
+        Return
+        ----------
+        x : np.ndarray
+            For :
+            full_output == False:
+                The solution of the optimization [phi_ac, I_c, L_s, C].
+            full_output == True:
+                x : ndarray
+                    The solution of the optimization.
+                success : bool
+                    Whether or not the optimizer exited successfully.
+                status : int
+                    Termination status of the optimizer. Its value depends on
+                    the underlying solver. Refer to message for details.
+                message : str
+                    Description of the cause of the termination.
+                fun, jac, hess: ndarray
+                    Values of objective function, its Jacobian and its Hessia
+                    if (available). The Hessians may be approximations, see the
+                    documentation of the function in question.
+                hess_inv : object
+                    Inverse of the objective function’s Hessian; may be an
+                    approximation. Not available for all solvers. The type of
+                    this attribute may be either np.ndarray or
+                    scipy.sparse.linalg.LinearOperator.
+                nfev, njev, nhev : int
+                    Number of evaluations of the objective functions and of its
+                    Jacobian and Hessian.
+                nit : int
+                    Number of iterations performed by the optimizer.
+                maxcv : float
+                    The maximum constraint violation.
         """
 
-        def func(x):
 
-            phi_ac, C, L_s = x
+        def func(x, f0, Qc):
 
-            self.phi_ac = abs(phi_ac)
-            self.C   = abs(C)
-            self.L_s = abs(L_s)
+            phi_ac, I_c, L_s, C = abs(x)
+
+            self.phi_ac = phi_ac
+            self.I_c    = I_c
+            self.L_s    = L_s
+            self.C      = C
 
             current_f0 = self.find_resonance_frequency()
             current_Qc = self.coupling_quality_factor()
             current_Qi = self.internal_quality_factor()
-            print phi_ac, C, L_s
-            print current_f0, current_Qc, current_Qi
-            print current_f0 - f0,\
-                   current_Qc - Qc,\
-                   current_Qi + Qc
-            print ''
 
-            return current_f0 - f0,\
-                   current_Qc - Qc,\
-                   current_Qi + Qc
+            y =  np.sum(((current_f0 - f0)/f0)**2.\
+                      + ((current_Qi + current_Qc)/Qc)**2.\
+                      + ((Qc  - current_Qc)/Qc)**2.)
+
+            if verbose:
+                print 'Parameters:'
+                print '    phi_ac = '+str(round(phi_ac/cst.hbar*cst.e*2., 3))+ ' phi_0, '\
+                      'I_c = '+str(round(I_c*1e6, 3))+ ' uA, '\
+                      'L_s = '+str(round(L_s*1e12, 3))+ ' pH, '\
+                      'C = '+str(round(C*1e12, 3))+ ' pF'
+                print 'Results:'
+                print '    f_0 = '+str(round(current_f0/1e9, 3))+' GHz, '\
+                      'Q_c = '+str(round(current_Qc, 3))+' '\
+                      'Q_i = '+str(round(current_Qi, 3))
+                print 'Least square:'
+                print '    '+str(y)
+                print ''
+
+            return y
 
         backup_phi_ac = self.phi_ac
-        backup_C   = self.C
-        backup_L_s = self.L_s
+        backup_C      = self.C
+        backup_I_c    = self.I_c
+        backup_L_s    = self.L_s
 
-        # results = abs(opt.newton_krylov(func, [self.phi_ac, self.C, self.L_s]))
-        results = abs(opt.fsolve(func, [self.phi_ac, self.C, self.L_s]))
-        # , args=(f0, Qc)))
+        results = opt.minimize(func,
+                               [self.phi_ac, self.I_c, self.L_s, self.C],
+                               args=(f0, Qc),
+                               method=method)
 
         if not update_parameters:
 
-            self.phi_ac = backup_I_c
-            self.C   = backup_C
-            self.L_s = backup_L_s
+            self.phi_ac = backup_phi_ac
+            self.C      = backup_C
+            self.I_c    = backup_I_c
+            self.L_s    = backup_L_s
 
-        return results
+        if full_output:
+            return results
+        else:
+            return results.x
 
 
 
