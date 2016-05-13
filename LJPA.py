@@ -28,7 +28,6 @@
 
 import numpy as np
 import scipy.constants as cst
-from scipy.optimize import fsolve
 import scipy.optimize as opt
 
 from JPA import JPA
