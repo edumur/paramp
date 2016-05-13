@@ -151,7 +151,7 @@ class LJPA(JPA):
 
         o0 = self.angular_resonance_frequency()
 
-        return 2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
+        return 3.*/2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
 
 
 
@@ -167,7 +167,7 @@ class LJPA(JPA):
         o0 = self.angular_resonance_frequency()
 
         return (b**2. + (self.L_s + a)**2.)\
-              /(2.*self.C*o0**2.*(b**2. + (self.L_s + a)**2.) - self.L_s - a)
+              /(3./2.*self.C*o0**2.*(b**2. + (self.L_s + a)**2.) - self.L_s - a)
 
 
 
