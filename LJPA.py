@@ -151,7 +151,7 @@ class LJPA(JPA):
 
         o0 = self.angular_resonance_frequency()
 
-        return 2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
+        return 3.*self.C/2. - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
 
 
 
@@ -167,7 +167,7 @@ class LJPA(JPA):
         o0 = self.angular_resonance_frequency()
 
         return (b**2. + (self.L_s + a)**2.)\
-              /(2.*self.C*o0**2.*(b**2. + (self.L_s + a)**2.) - self.L_s - a)
+              /(3./2.*self.C*o0**2.*(b**2. + (self.L_s + a)**2.) - self.L_s - a)
 
 
 
@@ -390,16 +390,10 @@ class LJPA(JPA):
     def optimized_LJPA(self, f0, Qc,
                              update_parameters=False,
                              full_output=False,
-                             verbose=False,
-                             method='Nelder-Mead'):
+                             verbose=False):
         """
         Optimized the different parameters of the LJPA to reached a target
         frequency and coupling quality factor.
-        This is done by minimizing the relative error of three values:
-            1 - the resonance frequency,
-            2 - the coupling quality factor,
-            3 - the absolute difference between the coupling and internal
-                quality factor.
 
         Parameters
         ----------
@@ -411,58 +405,8 @@ class LJPA(JPA):
             If the differents parameters found after the optimization are set
             to be the parameters of the LPJA instance.
         full_output : bool, optional
-            To return all optional output, if not, return just the parameters.
-        verbose : bool, optional
-            To print parameters, targets value and least square value during
-            optimization.
-        method : str, optional
-            Type of solver. Should be one of
-                'Nelder-Mead' - default
-                'Powell'
-                'CG'
-                'BFGS'
-                'Newton-CG'
-                'L-BFGS-B'
-                'TNC'
-                'COBYLA'
-                'SLSQP'
-                'dogleg'
-                'trust-ncg'
-
-        Return
-        ----------
-        x : np.ndarray
-            For :
-            full_output == False:
-                The solution of the optimization [phi_ac, I_c, L_s, C].
-            full_output == True:
-                x : ndarray
-                    The solution of the optimization.
-                success : bool
-                    Whether or not the optimizer exited successfully.
-                status : int
-                    Termination status of the optimizer. Its value depends on
-                    the underlying solver. Refer to message for details.
-                message : str
-                    Description of the cause of the termination.
-                fun, jac, hess: ndarray
-                    Values of objective function, its Jacobian and its Hessia
-                    if (available). The Hessians may be approximations, see the
-                    documentation of the function in question.
-                hess_inv : object
-                    Inverse of the objective function’s Hessian; may be an
-                    approximation. Not available for all solvers. The type of
-                    this attribute may be either np.ndarray or
-                    scipy.sparse.linalg.LinearOperator.
-                nfev, njev, nhev : int
-                    Number of evaluations of the objective functions and of its
-                    Jacobian and Hessian.
-                nit : int
-                    Number of iterations performed by the optimizer.
-                maxcv : float
-                    The maximum constraint violation.
+            To return all optional output
         """
-
 
         def func(x, f0, Qc):
 
@@ -505,7 +449,7 @@ class LJPA(JPA):
         results = opt.minimize(func,
                                [self.phi_ac, self.I_c, self.L_s, self.C],
                                args=(f0, Qc),
-                               method=method)
+                               method='Nelder-Mead')
 
         if not update_parameters:
 
