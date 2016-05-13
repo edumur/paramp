@@ -151,7 +151,7 @@ class LJPA(JPA):
 
         o0 = self.angular_resonance_frequency()
 
-        return 3.*/2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
+        return 3./2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
 
 
 
@@ -462,7 +462,6 @@ class LJPA(JPA):
                 maxcv : float
                     The maximum constraint violation.
         """
-
 
         def func(x, f0, Qc):
 
