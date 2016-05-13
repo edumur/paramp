@@ -3,11 +3,16 @@
 # Implementation of the Pumpistor model of a flux pumped SQUID in the
 # three wave mixing degenerate case ω_p = ω_s + ω_i and ω_p = ω_s.
 #
-# Based on an article of K. M. Sundqvist et al:
+# Based on an article from K. M. Sundqvist et al:
 # "The pumpistor: A linearized model of a flux-pumped superconducting
 # quantum interference device for use as a negative-resistance parametric
 # amplifier"
-# APL 109 102603 (2013)
+# APL 109 102603 (2013),
+# and on an article from J. Y. Mutus et al:
+# "Design and characterization of a lumped element single-ended
+# superconducting microwave parametric amplifier with on-chip
+# flux bias line"
+# APL 103 122602 (2013)
 
 # Copyright (C) 2016 Dumur Étienne
 # etienne.dumur@gmail.com
