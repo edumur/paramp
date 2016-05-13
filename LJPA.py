@@ -611,7 +611,7 @@ class LJPA(JPA):
     def print_result(self):
 
         f0_p, f0_t = self._parse_number(self.find_resonance_frequency(), 3)
-        fwhm_p, fwhm_t = self._parse_number(self.find_fwhm(), 3)
+        fwhm_p, fwhm_t = self._parse_number(self.find_reflection_fwhm(), 3)
         max_gain_p, max_gain_t = self._parse_number(self.find_max_gain(scale='log'), 3)
         Qi_p, Qi_t = self._parse_number(self.internal_quality_factor(), 3)
         Qc_p, Qc_t = self._parse_number(self.coupling_quality_factor(), 3)
