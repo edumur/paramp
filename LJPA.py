@@ -33,7 +33,7 @@
 
 import numpy as np
 import scipy.constants as cst
-import scipy.optimize as opt
+from scipy.optimize import minimize
 
 from JPA import JPA
 
@@ -505,10 +505,10 @@ class LJPA(JPA):
         backup_I_c    = self.I_c
         backup_L_s    = self.L_s
 
-        results = opt.minimize(func,
-                               [self.phi_ac, self.I_c, self.L_s, self.C],
-                               args=(f0, Qc),
-                               method=method)
+        results = minimize(func,
+                           [self.phi_ac, self.I_c, self.L_s, self.C],
+                           args=(f0, Qc),
+                           method=method)
 
         if not update_parameters:
 
