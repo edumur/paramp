@@ -67,9 +67,9 @@ class LJPA(JPA):
         phi_s : float
             Amplitude of the signal in rad.
         phi_dc : float
-            DC amplitude of the pump in weber.
+            DC amplitude of the pump in Φ0 unit.
         phi_ac : float
-            AC amplitude of the pump in weber.
+            AC amplitude of the pump in Φ0 unit.
         theta_p : float
             Phase of the pump in rad.
         theta_s : float, optional
@@ -587,9 +587,9 @@ class LJPA(JPA):
 
         Ic_p, Ic_t = self._parse_number(self.I_c, 3)
         delta_theta_p, delta_theta_t = self._parse_number(self.delta_theta()/np.pi, 3)
-        phi_s_p, phi_s_t = self._parse_number(self.phi_s/cst.hbar*2.*cst.e, 3)
-        phi_dc_p, phi_dc_t = self._parse_number(self.phi_dc/cst.hbar*2.*cst.e, 3)
-        phi_ac_p, phi_ac_t = self._parse_number(self.phi_ac/cst.hbar*2.*cst.e, 3)
+        phi_s_p, phi_s_t = self._parse_number(self.phi_s, 3)
+        phi_dc_p, phi_dc_t = self._parse_number(self.phi_dc, 3)
+        phi_ac_p, phi_ac_t = self._parse_number(self.phi_ac, 3)
 
         C_p, C_t = self._parse_number(self.C, 3)
         Ls_p, Ls_t = self._parse_number(self.L_s, 3)
@@ -602,7 +602,7 @@ class LJPA(JPA):
                '    Pumpistor parameters:\n'\
                '        SQUID critical current:       '+Ic_p+' '+Ic_t+'A\n'\
                '        Signal-pump phase difference: '+delta_theta_p+' '+delta_theta_t+'π\n'\
-               '        Signal amplitude:             '+phi_s_p+' '+phi_s_t+'Φ0\n'\
+               '        Signal amplitude:             '+phi_s_p+' '+phi_s_t+'rad\n'\
                '        DC pump amplitude:            '+phi_dc_p+' '+phi_dc_t+'Φ0\n'\
                '        AC pump amplitude:            '+phi_ac_p+' '+phi_ac_t+'Φ0\n'\
                '\n'\

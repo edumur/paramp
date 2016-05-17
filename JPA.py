@@ -55,9 +55,9 @@ class JPA(object):
         phi_s : float
             Amplitude of the signal in rad.
         phi_dc : float
-            DC amplitude of the pump in weber.
+            DC amplitude of the pump in Φ0 unit.
         phi_ac : float
-            AC amplitude of the pump in weber.
+            AC amplitude of the pump in Φ0 unit.
         theta_p : float
             Phase of the pump in rad.
         theta_s : float, optional
@@ -97,7 +97,7 @@ class JPA(object):
         Return the dimensionless DC flux amplitude.
         """
 
-        return np.pi*self.phi_dc/cst.h*2.*cst.e
+        return np.pi*self.phi_dc
 
 
 
@@ -106,7 +106,7 @@ class JPA(object):
         Return the dimensionless AC flux amplitude.
         """
 
-        return np.pi*self.phi_ac/cst.h*2.*cst.e
+        return np.pi*self.phi_ac
 
 
 
