@@ -486,7 +486,7 @@ class LJPA(JPA):
 
             if verbose:
                 print 'Parameters:'
-                print '    phi_ac = '+str(round(phi_ac/cst.hbar*cst.e*2., 3))+ ' phi_0, '\
+                print '    phi_ac = '+str(round(phi_ac, 3))+ ' phi_0, '\
                       'I_c = '+str(round(I_c*1e6, 3))+ ' uA, '\
                       'L_s = '+str(round(L_s*1e12, 3))+ ' pH, '\
                       'C = '+str(round(C*1e12, 3))+ ' pF'
