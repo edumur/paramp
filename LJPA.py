@@ -153,9 +153,7 @@ class LJPA(JPA):
         a = self.squid_inductance().real
         b = self.squid_inductance().imag
 
-        o0 = self.angular_resonance_frequency()
-
-        return 3./2.*self.C - (self.L_s + a)/o0**2./(b**2. + (self.L_s + a)**2.)
+        return self.C/2.*(3. - (self.L_s + a)**2./(b**2. + (self.L_s + a)**2.))
 
 
 
@@ -168,11 +166,7 @@ class LJPA(JPA):
         a = self.squid_inductance().real
         b = self.squid_inductance().imag
 
-        o0 = self.angular_resonance_frequency()
-
-        return (b**2. + (self.L_s + a)**2.)\
-              /(3./2.*self.C*o0**2.*(b**2. + (self.L_s + a)**2.) - self.L_s - a)
-
+        return 2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
 
 
     def equivalent_impedance(self, f):
@@ -219,9 +213,10 @@ class LJPA(JPA):
         flux pumped SQUID more than losses.
         """
 
-        return self.equivalent_resistance()\
-               *np.sqrt( self.equivalent_capacitance()\
-                        /self.equivalent_inductance())
+        a = self.squid_inductance().real
+        b = self.squid_inductance().imag
+
+        return -(self.L_s+a)/2./b*(3 - (self.L_s+a)**2./(b**2.+(self.L_s+a)**2.))
 
 
 
