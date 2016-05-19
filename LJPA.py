@@ -387,6 +387,7 @@ class LJPA(JPA):
 
 
     def optimized_LJPA(self, f0, Qc,
+                             fixed = [None],
                              update_parameters=False,
                              full_output=False,
                              verbose=False,
@@ -462,14 +463,19 @@ class LJPA(JPA):
                     The maximum constraint violation.
         """
 
-        def func(x, f0, Qc):
+        def func(x, f0, Qc, names):
 
-            phi_ac, I_c, L_s, C = abs(x)
+            x = abs(x)
 
-            self.phi_ac = phi_ac
-            self.I_c    = I_c
-            self.L_s    = L_s
-            self.C      = C
+            for value, name in zip(x, names):
+                if name == 'phi_ac':
+                    self.phi_ac = value
+                elif name == 'I_c':
+                    self.I_c = value
+                elif name == 'L_s':
+                    self.L_s = value
+                elif name == 'C':
+                    self.C = value
 
             current_f0 = self.find_resonance_frequency()
             current_Qc = self.coupling_quality_factor()
@@ -481,10 +487,10 @@ class LJPA(JPA):
 
             if verbose:
                 print 'Parameters:'
-                print '    phi_ac = '+str(round(phi_ac, 3))+ ' phi_0, '\
-                      'I_c = '+str(round(I_c*1e6, 3))+ ' uA, '\
-                      'L_s = '+str(round(L_s*1e12, 3))+ ' pH, '\
-                      'C = '+str(round(C*1e12, 3))+ ' pF'
+                print '    phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0, '\
+                      'I_c = '+str(round(self.I_c*1e6, 3))+ ' uA, '\
+                      'L_s = '+str(round(self.L_s*1e12, 3))+ ' pH, '\
+                      'C = '+str(round(self.C*1e12, 3))+ ' pF'
                 print 'Results:'
                 print '    f_0 = '+str(round(current_f0/1e9, 3))+' GHz, '\
                       'Q_c = '+str(round(current_Qc, 3))+' '\
@@ -495,22 +501,31 @@ class LJPA(JPA):
 
             return y
 
-        backup_phi_ac = self.phi_ac
-        backup_C      = self.C
-        backup_I_c    = self.I_c
-        backup_L_s    = self.L_s
+        # Get a list of variables parameters name and value
+        params_name  = ['phi_ac', 'I_c', 'L_s', 'C']
+        params_value = [self.phi_ac, self.I_c, self.L_s, self.C]
+
+        values = []
+        names  = []
+        for param_name, param_value in zip(params_name, params_value):
+            if param_name not in fixed:
+                names.append(param_name)
+                values.append(param_value)
+
+        # Store a backup before the minimization
+        backups = params_value
 
         results = minimize(func,
-                           [self.phi_ac, self.I_c, self.L_s, self.C],
-                           args=(f0, Qc),
+                           values,
+                           args=(f0, Qc, names),
                            method=method)
 
         if not update_parameters:
 
-            self.phi_ac = backup_phi_ac
-            self.C      = backup_C
-            self.I_c    = backup_I_c
-            self.L_s    = backup_L_s
+            self.phi_ac = backups[0]
+            self.I_c    = backups[1]
+            self.L_s    = backups[2]
+            self.C      = backups[3]
 
         if full_output:
             return results
