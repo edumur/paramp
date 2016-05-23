@@ -87,8 +87,7 @@ class LJPA(JPA):
         if type(L_s) is not float:
             raise ValueError('L_s parameter must be float type')
 
-        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p,
-                           theta_s = 0.)
+        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
         self.C   = C
         self.L_s = L_s
