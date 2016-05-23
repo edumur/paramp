@@ -266,12 +266,13 @@ class LJPA(JPA):
             The span in which the fwhm is calculated in Hz.
         """
 
-        f0 = self.resonance_frequency()
+        f0 = self.find_resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
         y = abs(self.reflection(f))**2.
+        f0_arg = y.argmax()
         half_max = (y.max() + self.reflection(f0+100e9)**2.)/2.
-        f1 = f[abs(y[:len(y)/2] - half_max).argmin()]
-        f2 = f[len(y)/2 + abs(y[len(y)/2:] - half_max).argmin()]
+        f1 = f[abs(y[:f0_arg] - half_max).argmin()]
+        f2 = f[f0_arg + abs(y[f0_arg:] - half_max).argmin()]
 
         return f2 - f1
 
