@@ -269,7 +269,7 @@ class LJPA(JPA):
         f0 = self.resonance_frequency()
         f = np.linspace(f0-span/2., f0+span/2., 1e6)
         y = abs(self.reflection(f))**2.
-        half_max = (y.max() + self.reflection(f0+100e9))/2.
+        half_max = (y.max() + self.reflection(f0+100e9)**2.)/2.
         f1 = f[abs(y[:len(y)/2] - half_max).argmin()]
         f2 = f[len(y)/2 + abs(y[len(y)/2:] - half_max).argmin()]
 
