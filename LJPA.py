@@ -33,7 +33,7 @@
 
 import numpy as np
 import scipy.constants as cst
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar
 
 from JPA import JPA
 
@@ -253,67 +253,46 @@ class LJPA(JPA):
 
 
 
-    def find_reflection_fwhm(self, span=10e9):
+    def find_reflection_fwhm(self):
         """
         Return the half width at half maximum in Hz of the power reflection.
-        Numerically estimated by looking for frequency at which imag(impedance)
-        is zero.
-
-        Parameters
-        ----------
-        span : float, optional
-            The span in which the fwhm is calculated in Hz.
+        Numerically estimated.
         """
+
+        def func(f,half_max):
+            return abs(-abs(self.reflection(f))**2. + half_max)
 
         f0 = self.find_resonance_frequency()
-        f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(self.reflection(f))**2.
-        f0_arg = y.argmax()
-        half_max = (y.max() + self.reflection(f0+100e9)**2.)/2.
-        f1 = f[abs(y[:f0_arg] - half_max).argmin()]
-        f2 = f[f0_arg + abs(y[f0_arg:] - half_max).argmin()]
+        half_max = (  abs(self.reflection(f0))**2.\
+                    + abs(self.reflection(f0+100e9))**2.)/2.
+        df = minimize_scalar(func, bounds=(1., 100e9),
+                                   method='bounded',
+                                   args=[half_max]).x
 
-        return f2 - f1
-
+        return abs(f0 - df)*2.
 
 
-    def find_angular_resonance_frequency(self, span=10e9):
+
+    def find_angular_resonance_frequency(self):
         """
-        Return the angular resonance frequency in Hz of the power reflection.
-        Numerically estimated by looking for frequency at which imag(impedance)
-        is zero.
-
-        Parameters
-        ----------
-        span : float, optional
-            The span in which the fwhm is calculated in Hz.
+        Return the angular resonance frequency in rad.Hz of the power reflection.
+        Numerically estimated.
         """
 
-        f0 = self.resonance_frequency()
-        f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(self.impedance(f).imag)
-
-        return f[y.argmin()]
+        return self.find_resonance_frequency()*2.*np.pi
 
 
 
-    def find_resonance_frequency(self, span=10e9):
+    def find_resonance_frequency(self):
         """
         Return the resonance frequency in Hz of the power reflection.
-        Numerically estimated by looking for frequency at which imag(impedance)
-        is zero.
-
-        Parameters
-        ----------
-        span : float, optional
-            The span in which the fwhm is calculated in Hz.
+        Numerically estimated.
         """
 
-        f0 = self.resonance_frequency()
-        f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(self.impedance(f).imag)
+        def func(f):
+            return -abs(self.reflection(f))**2.
 
-        return f[y.argmin()]
+        return minimize_scalar(func, bounds=(1., 100e9), method='bounded').x
 
 
 
@@ -335,15 +314,13 @@ class LJPA(JPA):
 
 
 
-    def find_max_gain(self, span=10e9, scale='log'):
+    def find_max_gain(self, scale='log'):
         """
         Return the maximum power gain.
         Numerically estimated.
 
         Parameters
         ----------
-        span : float, optional
-            The span in which the fwhm is calculated in Hz.
         scale: {log, linear}, optional
             The power reflection will be returned in log or linear scale.
 
@@ -356,14 +333,13 @@ class LJPA(JPA):
         if scale not in ('log', 'linear'):
             raise ValueError("Parameter 'scale' must be 'log' or 'linear'")
 
-        f0 = self.resonance_frequency()
-        f = np.linspace(f0-span/2., f0+span/2., 1e6)
-        y = abs(self.reflection(f))**2.
+
+        y = abs(self.reflection(self.find_resonance_frequency()))**2.
 
         if scale.lower() == 'log':
-            return 10.*np.log10(y.max())
+            return 10.*np.log10(y)
         elif scale.lower() == 'linear':
-            return y.max()
+            return y
 
 
 
