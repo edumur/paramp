@@ -267,7 +267,7 @@ class LJPA(JPA):
                     + abs(self.reflection(f0+100e9))**2.)/2.
         df = minimize_scalar(func, bounds=(1., 100e9),
                                    method='bounded',
-                                   args=[half_max]).x
+                                   args=[half_max]).x[0]
 
         return abs(f0 - df)*2.
 
