@@ -33,12 +33,13 @@
 
 import numpy as np
 import scipy.constants as cst
-from scipy.optimize import minimize, minimize_scalar
+from scipy.optimize import minimize
 
 from JPA import JPA
+from find import Find
 
 
-class LJPA(JPA):
+class LJPA(JPA, Find):
 
 
 
@@ -168,6 +169,7 @@ class LJPA(JPA):
         return 2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
 
 
+
     def equivalent_impedance(self, f):
         """
         Return the impedance of the equivalente resonator formed by the SQUID,
@@ -253,49 +255,6 @@ class LJPA(JPA):
 
 
 
-    def find_reflection_fwhm(self):
-        """
-        Return the half width at half maximum in Hz of the power reflection.
-        Numerically estimated.
-        """
-
-        def func(f,half_max):
-            return abs(-abs(self.reflection(f))**2. + half_max)
-
-        f0 = self.find_resonance_frequency()
-        half_max = (  abs(self.reflection(f0))**2.\
-                    + abs(self.reflection(f0+100e9))**2.)/2.
-        df = minimize_scalar(func, bounds=(1., 100e9),
-                                   method='bounded',
-                                   args=[half_max]).x
-
-        return abs(f0 - df)*2.
-
-
-
-    def find_angular_resonance_frequency(self):
-        """
-        Return the angular resonance frequency in rad.Hz of the power reflection.
-        Numerically estimated.
-        """
-
-        return self.find_resonance_frequency()*2.*np.pi
-
-
-
-    def find_resonance_frequency(self):
-        """
-        Return the resonance frequency in Hz of the power reflection.
-        Numerically estimated.
-        """
-
-        def func(f):
-            return -abs(self.reflection(f))**2.
-
-        return minimize_scalar(func, bounds=(1., 100e9), method='bounded').x
-
-
-
     def optimized_squid_inductance_imag(self, R0=50.):
         """
         Return the imaginary part of the SQUID inductance for which the
@@ -311,35 +270,6 @@ class LJPA(JPA):
         a = self.squid_inductance().real
 
         return (R0 - np.sqrt(R0**2. - 4.*np.sqrt((self.L_s + a)**3./self.C)))/2.
-
-
-
-    def find_max_gain(self, scale='log'):
-        """
-        Return the maximum power gain.
-        Numerically estimated.
-
-        Parameters
-        ----------
-        scale: {log, linear}, optional
-            The power reflection will be returned in log or linear scale.
-
-        Raises
-        ------
-        ValueError
-            If the parameters are not in the good type.
-        """
-
-        if scale not in ('log', 'linear'):
-            raise ValueError("Parameter 'scale' must be 'log' or 'linear'")
-
-
-        y = abs(self.reflection(self.find_resonance_frequency()))**2.
-
-        if scale.lower() == 'log':
-            return 10.*np.log10(y)
-        elif scale.lower() == 'linear':
-            return y
 
 
 
