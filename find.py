@@ -24,7 +24,7 @@ class Find(object):
 
 
 
-    def find_max_gain(self, scale='log'):
+    def find_max_gain(self, scale='log', R0=50.):
         """
         Return the maximum power gain.
         Numerically estimated.
@@ -44,7 +44,7 @@ class Find(object):
             raise ValueError("Parameter 'scale' must be 'log' or 'linear'")
 
 
-        y = abs(self.reflection(self.find_resonance_frequency()))**2.
+        y = abs(self.reflection(self.find_resonance_frequency(R0)))**2.
 
         if scale.lower() == 'log':
             return 10.*np.log10(y)
@@ -53,43 +53,46 @@ class Find(object):
 
 
 
-    def find_reflection_fwhm(self):
+    def find_reflection_fwhm(self, R0=50.):
         """
         Return the half width at half maximum in Hz of the power reflection.
         Numerically estimated.
         """
 
-        def func(f,half_max):
-            return abs(-abs(self.reflection(f))**2. + half_max)
+        def func(f, half_max, R0):
+            return abs(-abs(self.reflection(f, R0))**2. + half_max)
 
-        f0 = self.find_resonance_frequency()
-        half_max = (  abs(self.reflection(f0))**2.\
-                    + abs(self.reflection(f0+100e9))**2.)/2.
+        f0 = self.find_resonance_frequency(R0)
+        half_max = (  abs(self.reflection(f0, R0))**2.\
+                    + abs(self.reflection(f0+100e9, R0))**2.)/2.
         df = minimize_scalar(func, bounds=(1., 100e9),
                                    method='bounded',
-                                   args=[half_max]).x
+                                   args=[half_max, R0]).x
 
         return abs(f0 - df)*2.
 
 
 
-    def find_angular_resonance_frequency(self):
+    def find_angular_resonance_frequency(self, R0=50.):
         """
         Return the angular resonance frequency in rad.Hz of the power reflection.
         Numerically estimated.
         """
 
-        return self.find_resonance_frequency()*2.*np.pi
+        return self.find_resonance_frequency(R0)*2.*np.pi
 
 
 
-    def find_resonance_frequency(self):
+    def find_resonance_frequency(self, R0=50.):
         """
         Return the resonance frequency in Hz of the power reflection.
         Numerically estimated.
         """
 
-        def func(f):
-            return -abs(self.reflection(f))**2.
+        def func(f, R0):
+            return -abs(self.reflection(f, R0))**2.
 
-        return minimize_scalar(func, bounds=(1., 100e9), method='bounded').x
+        return minimize_scalar(func,
+		                       args=[R0],
+							   bounds=(1., 100e9),
+							   method='bounded').x

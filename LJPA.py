@@ -293,6 +293,7 @@ class LJPA(JPA, Find):
 
 
     def optimized_LJPA(self, f0, Qc,
+                             R0 = 50.,
                              fixed = [None],
                              update_parameters=False,
                              full_output=False,
@@ -369,7 +370,7 @@ class LJPA(JPA, Find):
                     The maximum constraint violation.
         """
 
-        def func(x, f0, Qc, names):
+        def func(x, f0, Qc, R0, names):
 
             x = abs(x)
 
@@ -383,8 +384,8 @@ class LJPA(JPA, Find):
                 elif name == 'C':
                     self.C = value
 
-            current_f0 = self.find_resonance_frequency()
-            current_Qc = self.coupling_quality_factor()
+            current_f0 = self.find_resonance_frequency(R0)
+            current_Qc = self.coupling_quality_factor(R0)
             current_Qi = self.internal_quality_factor()
 
             y =  np.sum(((current_f0 - f0)/f0)**2.\
@@ -423,7 +424,7 @@ class LJPA(JPA, Find):
 
         results = minimize(func,
                            values,
-                           args=(f0, Qc, names),
+                           args=(f0, Qc, R0, names),
                            method=method)
 
         if not update_parameters:
