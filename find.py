@@ -67,7 +67,7 @@ class Find(object):
                     + abs(self.reflection(f0+100e9, R0))**2.)/2.
         df = minimize_scalar(func, bounds=(1., 100e9),
                                    method='bounded',
-                                   args=[half_max, R0]).x
+                                   args=[half_max, R0]).x[0]
 
         return abs(f0 - df)*2.
 
@@ -95,4 +95,4 @@ class Find(object):
         return minimize_scalar(func,
 		                       args=[R0],
 							   bounds=(1., 100e9),
-							   method='bounded').x
+							   method='bounded').x[0]
