@@ -298,7 +298,8 @@ class LJPA(JPA, Find):
                              update_parameters=False,
                              full_output=False,
                              verbose=False,
-                             method='Nelder-Mead'):
+                             method='Nelder-Mead',
+                             bounds=None):
         """
         Optimized the different parameters of the LJPA to reached a target
         frequency and coupling quality factor.
@@ -377,6 +378,8 @@ class LJPA(JPA, Find):
             for value, name in zip(x, names):
                 if name == 'phi_ac':
                     self.phi_ac = value
+                elif name == 'phi_dc':
+                    self.phi_dc = value
                 elif name == 'I_c':
                     self.I_c = value
                 elif name == 'L_s':
@@ -395,6 +398,7 @@ class LJPA(JPA, Find):
             if verbose:
                 print 'Parameters:'
                 print '    phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0, '\
+                      'phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0, '\
                       'I_c = '+str(round(self.I_c*1e6, 3))+ ' uA, '\
                       'L_s = '+str(round(self.L_s*1e12, 3))+ ' pH, '\
                       'C = '+str(round(self.C*1e12, 3))+ ' pF'
@@ -409,8 +413,8 @@ class LJPA(JPA, Find):
             return y
 
         # Get a list of variables parameters name and value
-        params_name  = ['phi_ac', 'I_c', 'L_s', 'C']
-        params_value = [self.phi_ac, self.I_c, self.L_s, self.C]
+        params_name  = ['phi_ac', 'phi_dc', 'I_c', 'L_s', 'C']
+        params_value = [self.phi_ac, self.phi_dc, self.I_c, self.L_s, self.C]
 
         values = []
         names  = []
@@ -425,14 +429,16 @@ class LJPA(JPA, Find):
         results = minimize(func,
                            values,
                            args=(f0, Qc, R0, names),
-                           method=method)
+                           method=method,
+                           bounds=bounds)
 
         if not update_parameters:
 
             self.phi_ac = backups[0]
-            self.I_c    = backups[1]
-            self.L_s    = backups[2]
-            self.C      = backups[3]
+            self.phi_dc = backups[1]
+            self.I_c    = backups[2]
+            self.L_s    = backups[3]
+            self.C      = backups[4]
 
         if full_output:
             return results
