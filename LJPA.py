@@ -292,10 +292,10 @@ class LJPA(JPA, Find):
 
 
 
-    def optimized_LJPA(self, f0, Qc,
-                             R0 = 50.,
-                             fixed = [None],
-                             weight = {'f0':10., 'Qc=Qi':1., 'Qc':1.},
+    def optimized_LJPA(self, f0, Qc, BW=None,
+                             R0=50.,
+                             fixed=[None],
+                             weight={'f0':10., 'Qc=Qi':1., 'Qc':1., 'BW':1.},
                              update_parameters=False,
                              full_output=False,
                              verbose=False,
@@ -392,9 +392,16 @@ class LJPA(JPA, Find):
             current_Qc = self.coupling_quality_factor(R0)
             current_Qi = self.internal_quality_factor()
 
+            if BW is not None:
+                current_BW = self.find_reflection_fwhm()
+                relative_error_BW = ((current_BW - BW)/BW*weight['BW'])**2.
+            else:
+                relative_error_BW = 0.
+
             y =  np.sum(((current_f0 - f0)/f0*weight['f0'])**2.\
                       + ((current_Qi + current_Qc)/Qc*weight['Qc=Qi'])**2.\
-                      + ((Qc  - current_Qc)/Qc*weight['Qc'])**2.)
+                      + ((Qc  - current_Qc)/Qc*weight['Qc'])**2.\
+                      + relative_error_BW)
 
             if verbose:
                 print 'Parameters:'
