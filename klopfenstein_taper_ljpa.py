@@ -281,7 +281,7 @@ class KlopfensteinTaperLJPA(LJPA):
 
 
 
-    def reflection(self, f, n=1e2):
+    def reflection(self, f, n=1e2, as_theory=False):
         """
         Return the reflection of the taper.
         To do so, the taper impedance is discretised in n sections.
@@ -296,8 +296,13 @@ class KlopfensteinTaperLJPA(LJPA):
         ----------
         f : float, np.ndarray
             Frequency in GHz.
-        n : {0.} float, optional
+        n : float, optional
             Number of discret elements used to model the taper line.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impeance
+            calculation to try to mimic the theoritical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoritical expectation.
         """
 
         # Calculate the different characteristic impedance of the different
@@ -335,7 +340,11 @@ class KlopfensteinTaperLJPA(LJPA):
             # We end the chain by two elements:
             # 1 - a load impedance to the ground
             # 2 - a huge impedance to the circuit
-            M = M.dot(np.array([[1., 0.],[1./self.impedance(f), 1.]]))
+            if as_theory:
+                M = M.dot(np.array([[1., 0.],[1./self.zl, 1.]]))
+            else:
+                M = M.dot(np.array([[1., 0.],[1./self.impedance(f), 1.]]))
+
             M = M.dot(np.array([[1., 1e99],[0., 1.]]))
 
             # Compute the reflection fro the array element
