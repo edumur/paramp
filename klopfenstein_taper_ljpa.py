@@ -27,8 +27,11 @@
 
 import numpy as np
 from scipy.optimize import minimize, fsolve
+from multiprocessing import Pool
+import itertools
 
 from LJPA import LJPA
+from klopfenstein_discretization import inter_func
 
 class KlopfensteinTaperLJPA(LJPA):
 
@@ -280,7 +283,6 @@ class KlopfensteinTaperLJPA(LJPA):
 
 
 
-
     def reflection(self, f, n=1e2, as_theory=False):
         """
         Return the reflection of the taper.
@@ -289,8 +291,10 @@ class KlopfensteinTaperLJPA(LJPA):
         At the end the LJPA is modeled as a lumped element to ground and very
         high impedance (1e99 ohm) to the line.
 
-        Because of matrix product this method is quite slow...
-        If somebody has an idea to improve it, don't hesitate.
+        This method use multithreading calculation to be faster.
+        as a consequence asking only one frequency is slower than without
+        multithreading.
+        Since this case of use is rare it shouln't be a problem.
 
         Parameters
         ----------
@@ -311,51 +315,31 @@ class KlopfensteinTaperLJPA(LJPA):
 
         # Calculate the corresponding L_l and C_l for the elements
         ll, cl = self.find_ll_cl(z)
+        z = np.sqrt(ll/cl)
+        beta = ll*cl
 
-        result = []
         if type(f) is not np.ndarray:
             f = [f]
-        for f in f:
 
-            a = 2.*np.pi*f*np.sqrt(ll[0]*cl[0])*self.l/(n-1)
-            z = np.sqrt(ll[0]/cl[0])
-            c = np.cos(a)
-            s = np.sin(a)
+        # Create a pool a thread for fast computation
+        pool = Pool()
+        result = pool.map(inter_func,
+        itertools.izip(f, itertools.repeat(beta),
+                            itertools.repeat(z),
+                            itertools.repeat(n),
+                            itertools.repeat(self.l),
+                            itertools.repeat(self.zl),
+                            itertools.repeat(self.C),
+                            itertools.repeat(self.L_s),
+                            itertools.repeat(self.I_c),
+                            itertools.repeat(self.phi_s),
+                            itertools.repeat(self.phi_dc),
+                            itertools.repeat(self.phi_ac),
+                            itertools.repeat(self.theta_p),
+                            itertools.repeat(self.theta_s),
+                            itertools.repeat(as_theory)))
 
-            # We matrix multiply all the elements
-            M = np.array([[c,         1j*z*s],
-                          [1j/z*s, c]])
-            for lll, ccl in zip(ll[1:], cl[1:]):
-
-                z = np.sqrt(lll/ccl)
-                # print z
-                a = 2.*np.pi*f*np.sqrt(lll*ccl)*self.l/(n-1)
-
-                c = np.cos(a)
-                s = np.sin(a)
-
-                M = M.dot(np.array([[c,       1j*z*s],
-                                    [1j/z*s, c]]))
-
-            # We end the chain by two elements:
-            # 1 - a load impedance to the ground
-            # 2 - a huge impedance to the circuit
-            if as_theory:
-                M = M.dot(np.array([[1., 0.],[1./self.zl, 1.]]))
-            else:
-                M = M.dot(np.array([[1., 0.],[1./self.impedance(f), 1.]]))
-
-            M = M.dot(np.array([[1., 1e99],[0., 1.]]))
-
-            # Compute the reflection fro the array element
-            a = M.item(0)
-            b = M.item(1)
-            c = M.item(2)
-            d = M.item(3)
-
-            nu = a + b/50. - c*50. - d
-            de = a + b/50. + c*50. + d
-
-            result.append(nu/de)
+        pool.close()
+        pool.join()
 
         return np.array(result)
