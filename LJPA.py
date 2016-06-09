@@ -44,7 +44,7 @@ class LJPA(JPA, Find):
 
 
     def __init__(self, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p,
-                 theta_s = 0.):
+                 theta_s = 0., f_p=None):
         """
         Implementation of the LJPA in the three wave mixing degenerate case
         ω_p = ω_s + ω_i and ω_p = ω_s.
@@ -76,6 +76,8 @@ class LJPA(JPA, Find):
         theta_s : float, optional
             Phase of the pump in rad, default is zero which implies that that\
             the signal phase is the reference.
+        f_p : float, optional
+            Pump frequency. If None we assume  f_p = 2*f_s.
 
         Raises
         ------
@@ -88,10 +90,33 @@ class LJPA(JPA, Find):
         if type(L_s) is not float:
             raise ValueError('L_s parameter must be float type')
 
-        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, f_p)
 
         self.C   = C
         self.L_s = L_s
+
+
+
+    def external_impedance(self, f, R0=50.):
+        """
+        Return the impedance of the electrical environment seen by the SQUID.
+        We assume the circuit to be 50 ohm matched.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            50 ohm.
+        """
+
+        o = 2.*np.pi*f
+
+        return 1./(1j*o*self.L_s + 1./(1j*o*self.C + 1./R0))
+
 
 
     def impedance(self, f):
@@ -107,64 +132,100 @@ class LJPA(JPA, Find):
 
         o = 2.*np.pi*f
 
-        return 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance())))
+        return 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance(f))))
 
 
-    def angular_resonance_frequency(self):
+    def angular_resonance_frequency(self, f=None):
         """
         Return the angular resonance frequency in rad.Hz of the resonator formed
         by the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        return 1./np.sqrt(self.C*(self.L_s+self.squid_inductance().real))
+        return 1./np.sqrt(self.C*(self.L_s + self.squid_inductance(f).real))
 
 
-    def resonance_frequency(self):
+    def resonance_frequency(self, f=None):
         """
         Return the resonance frequency in Hz of the resonator formed by the
         SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        return 1./np.sqrt(self.C*(self.L_s+self.squid_inductance().real))/2./np.pi
+        return 1./np.sqrt(self.C*(  self.L_s\
+                                  + self.squid_inductance(f).real))/2./np.pi
 
 
 
-    def equivalent_resistance(self):
+    def equivalent_resistance(self, f=None):
         """
         Return the resistance in ohm of the equivalente resonator formed by the
         SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        a = self.squid_inductance().real
-        b = self.squid_inductance().imag
+        a = self.squid_inductance(f).real
+        b = self.squid_inductance(f).imag
 
-        o0 = self.angular_resonance_frequency()
+        o0 = self.angular_resonance_frequency(f)
 
         return -o0*(self.L_s + a)**2./b
 
 
 
-    def equivalent_capacitance(self):
+    def equivalent_capacitance(self, f=None):
         """
         Return the capacitance in farad of the equivalente resonator formed by
         the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        a = self.squid_inductance().real
-        b = self.squid_inductance().imag
+        a = self.squid_inductance(f).real
+        b = self.squid_inductance(f).imag
 
         return self.C/2.*(3. - (self.L_s + a)**2./(b**2. + (self.L_s + a)**2.))
 
 
 
-    def equivalent_inductance(self):
+    def equivalent_inductance(self, f=None):
         """
         Return the inductance in henry of the equivalente resonator formed by
         the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        a = self.squid_inductance().real
-        b = self.squid_inductance().imag
+        a = self.squid_inductance(f).real
+        b = self.squid_inductance(f).imag
 
         return 2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
 
@@ -174,119 +235,163 @@ class LJPA(JPA, Find):
         """
         Return the impedance of the equivalente resonator formed by the SQUID,
         the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
         o = 2.*np.pi*f
 
-        return 1./(1./self.equivalent_resistance()\
-                   + 1j*o*self.equivalent_capacitance()\
-                   + 1./1j/o/self.equivalent_inductance())
+        return 1./(1./self.equivalent_resistance(f)\
+                   + 1j*o*self.equivalent_capacitance(f)\
+                   + 1./1j/o/self.equivalent_inductance(f))
 
 
 
-    def equivalent_angular_resonance_frequency(self):
+    def equivalent_angular_resonance_frequency(self, f=None):
         """
         Return the angular resonance frequency in rad.Hz of the equivalent_capacitance
         resonator formed by the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        return 1./np.sqrt(self.equivalent_capacitance()\
-                          *self.equivalent_inductance())/2./np.pi
+        return 1./np.sqrt(self.equivalent_capacitance(f)\
+                          *self.equivalent_inductance(f))/2./np.pi
 
 
 
-    def equivalent_resonance_frequency(self):
+    def equivalent_resonance_frequency(self, f=None):
         """
         Return the resonance frequency in Hz of the equivalent resonator formed
         by the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        return 1./np.sqrt(self.equivalent_capacitance()\
-                          *self.equivalent_inductance())/2./np.pi
+        return 1./np.sqrt(self.equivalent_capacitance(f)\
+                          *self.equivalent_inductance(f))/2./np.pi
 
 
 
-    def internal_quality_factor(self):
+    def internal_quality_factor(self, f=None):
         """
         Return the internal quality factor (Qi) of the equivalente resonator
         formed by the SQUID, the stray inductance and the capacitance.
         Since there is not dissipation in the model, Qi is related to the
         flux pumped SQUID more than losses.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        a = self.squid_inductance().real
-        b = self.squid_inductance().imag
+        a = self.squid_inductance(f).real
+        b = self.squid_inductance(f).imag
 
         return -(self.L_s+a)/2./b*(3 - (self.L_s+a)**2./(b**2.+(self.L_s+a)**2.))
 
 
 
-    def coupling_quality_factor(self, R0=50.):
+    def coupling_quality_factor(self, f=None, R0=50.):
         """
         Return the coupling quality factor (Qc) of the equivalente resonator
         formed by the SQUID, the stray inductance and the capacitance.
 
         Parameters
         ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         R0 : float, optional
             The characteristic impedance of the incoming line. Assumed to be
             losses line so real and 50 ohm.
         """
 
-        return R0*np.sqrt( self.equivalent_capacitance()\
-                           /self.equivalent_inductance())
+        return R0*np.sqrt( self.equivalent_capacitance(f)\
+                           /self.equivalent_inductance(f))
 
 
 
-    def total_quality_factor(self, R0=50.):
+    def total_quality_factor(self, f=None, R0=50.):
         """
         Return the total quality factor (Q0) of the equivalente resonator
         formed by the SQUID, the stray inductance and the capacitance.
 
         Parameters
         ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         R0 : float, optional
             The characteristic impedance of the incoming line. Assumed to be
             losses line so real and 50 ohm.
         """
 
-        return 1./(  1./self.internal_quality_factor()\
-                   + 1./self.coupling_quality_factor(R0))
+        return 1./(  1./self.internal_quality_factor(f)\
+                   + 1./self.coupling_quality_factor(f, R0))
 
 
 
-    def optimized_squid_inductance_imag(self, R0=50.):
+    def optimized_squid_inductance_imag(self, f=None, R0=50.):
         """
         Return the imaginary part of the SQUID inductance for which the
         internal quality factor equalizes the coupling quality factor.
 
         Parameters
         ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         R0 : float, optional
             The characteristic impedance of the incoming line. Assumed to be
             losses line so real and 50 ohm.
         """
 
-        a = self.squid_inductance().real
+        a = self.squid_inductance(f).real
 
         return (R0 - np.sqrt(R0**2. - 4.*np.sqrt((self.L_s + a)**3./self.C)))/2.
 
 
 
-    def optimized_resonator_capacitance(self, R0=50.):
+    def optimized_resonator_capacitance(self, f=None, R0=50.):
         """
         Return the resonator capacitance for which the internal quality factor
         equalizes the coupling quality factor.
 
         Parameters
         ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         R0 : float, optional
             The characteristic impedance of the incoming line. Assumed to be
             losses line so real and 50 ohm.
         """
 
-        a = self.squid_inductance().real
-        b = self.squid_inductance().imag
+        a = self.squid_inductance(f).real
+        b = self.squid_inductance(f).imag
 
         return (self.L_s + a)**3./b**2./(b - R0)**2.
 
@@ -309,6 +414,9 @@ class LJPA(JPA, Find):
             2 - the coupling quality factor,
             3 - the absolute difference between the coupling and internal
                 quality factor.
+            4 (optional) - the bandwidth.
+
+        Work only in the degenerate case !
 
         Parameters
         ----------
@@ -389,8 +497,8 @@ class LJPA(JPA, Find):
                     self.C = value
 
             current_f0 = self.find_resonance_frequency(R0)
-            current_Qc = self.coupling_quality_factor(R0)
-            current_Qi = self.internal_quality_factor()
+            current_Qc = self.coupling_quality_factor(current_f0, R0)
+            current_Qi = self.internal_quality_factor(current_f0)
 
             if BW is not None:
                 current_BW = self.find_reflection_fwhm()
