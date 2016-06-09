@@ -238,10 +238,8 @@ class LJPA(JPA, Find):
 
         Parameters
         ----------
-        f : float, np.ndarray, optional
+        f : float, np.ndarray
             Signal frequency in hertz.
-            Is required in the non-degenerate case but optional for the
-            degenerate one.
         """
 
         o = 2.*np.pi*f
