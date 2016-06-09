@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 
 # Implementation of the Pumpistor model of a flux pumped SQUID in the
-# three wave mixing degenerate case ω_p = ω_s + ω_i and ω_p = ω_s.
+# three wave mixing degenerate case ω_p = ω_s + ω_i.
 #
 # Based on an article of K. M. Sundqvist et al:
 # "The pumpistor: A linearized model of a flux-pumped superconducting
@@ -35,10 +35,10 @@ class JPA(object):
 
 
     def __init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p,
-                 theta_s = 0.):
+                 theta_s=0., f_p=None):
         """
         Implementation of the Pumpistor model of a flux pumped SQUID in the
-        three wave mixing degenerate case ω_p = ω_s + ω_i and ω_p = ω_s.
+        three wave mixing case ω_p = ω_s + ω_i.
 
         Based on an article of K. M. Sundqvist et al:
         "The pumpistor: A linearized model of a flux-pumped superconducting
@@ -63,6 +63,8 @@ class JPA(object):
         theta_s : float, optional
             Phase of the pump in rad, default is zero which implies that that\
             the signal phase is the reference.
+        f_p : float, optional
+            Pump frequency. If None we assume  f_p = 2*f_s.
 
         Raises
         ------
@@ -89,6 +91,7 @@ class JPA(object):
         self.phi_ac  = phi_ac
         self.theta_p = theta_p
         self.theta_s = theta_s
+        self.f_p = f_p
 
 
 
@@ -131,26 +134,50 @@ class JPA(object):
 
 
 
-    def pumpistor_inductance(self):
+    def pumpistor_inductance(self, f=None):
         """
         Return the pumpistor inductance.
+        In the case of the non-degenerate case, a parent class must provide
+        a external_impedance method returning the impedance of the electrical
+        environment seen by the SQUID.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
         """
 
-        return -2.*np.exp(1j*self.delta_theta())/self.delta_f()\
-               *cst.hbar/2./cst.e/self.I_c/abs(np.sin(self.F()))\
-               *self.phi_s/(2.*jv(1., self.phi_s)\
-                            - 2.*np.exp(2j*self.delta_theta())*jv(3., self.phi_s))
+        # If f_p is None, we return the pumpistor inductance of the
+        # degenerate case.
+        if self.f_p is None:
+
+            return -2.*np.exp(1j*self.delta_theta())/self.delta_f()\
+                   *cst.hbar/2./cst.e/self.I_c/abs(np.sin(self.F()))\
+                   *self.phi_s/(2.*jv(1., self.phi_s)\
+                                - 2.*np.exp(2j*self.delta_theta())*jv(3., self.phi_s))
+        else:
+
+            if f is None:
+                raise ValueError('In the non-degenerate case, the pumpistor needs the signal frequency.')
+
+            return cst.h/2./cst.e/np.pi/self.I_c/np.sin(self.F())**2./self.delta_f()**2.\
+                   *(- 2.*np.cos(self.F())\
+                     + 1j*cst.h/2./cst.e/np.pi/self.I_c\
+                         *2.*np.pi*(self.f_p - f)\
+                         *self.external_impedance(self.f_p - f).conjugate())
 
 
 
-    def squid_inductance(self):
+    def squid_inductance(self, f=None):
         """
         Return the squid inductance which is simply the parallel sum of the
         pumpistor and the Josephson indutance.
         """
 
         return 1./(  1./self.josephson_inductance()\
-                   + 1./self.pumpistor_inductance())
+                   + 1./self.pumpistor_inductance(f))
 
 
 
@@ -172,7 +199,7 @@ class JPA(object):
         if type(f) not in (float, np.ndarray):
             raise ValueError('f parameter must be float or np.ndarray type.')
 
-        return 1j*f*2.*np.pi*self.pumpistor_inductance()
+        return 1j*f*2.*np.pi*self.pumpistor_inductance(f)
 
 
 
@@ -216,7 +243,7 @@ class JPA(object):
         if type(f) not in (float, np.ndarray):
             raise ValueError('f parameter must be float or np.ndarray type')
 
-        return 1j*f*2.*np.pi*self.squid_inductance()
+        return 1j*f*2.*np.pi*self.squid_inductance(f)
 
 
 
