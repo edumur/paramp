@@ -18,6 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 import numpy as np
+import scipy.constants as cst
 from scipy.optimize import minimize_scalar
 
 class Find(object):
@@ -96,3 +97,76 @@ class Find(object):
 		                       args=(R0,),
 							   bounds=(1., 100e9),
 							   method='bounded').x
+
+
+
+    def find_1db_deviation_power(self, f, R0=50., unit='dBm'):
+        """
+        Find the lowest power at which the gain changes of at least one dB.
+        Please note that this change can be +/- 1dB.
+        Return the time average power, not the RMS power.
+
+        Parameters
+        ----------
+        f : float, np.ndarray
+            The frequency in hertz.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            losses line so real and 50 ohm.
+        unit : {'dBm', 'rad'} string, optional
+            Unit in which the result is returned
+        """
+
+        # First we backup the initial phi_s value
+        backup_phi_s = self.phi_s
+
+        # We look for the reflection power at very low input power
+        self.phi_s = 0.00001
+        reflection_low_power =  20.*np.log10(abs(self.reflection(f)))
+
+        # We look for the maximum possible reflection power
+        def func1(phi, f):
+            self.phi_s = phi
+            return  -abs(self.reflection(f))
+
+        reflection_optimum_power = minimize_scalar(func1,
+                                                   args=[f],
+                                                   bounds=(0.00001, 5.),
+                                                   method='bounded').x
+
+        self.phi_s = reflection_optimum_power
+        reflection_optimum_power =  20.*np.log10(abs(self.reflection(f)))
+
+        # If the maximum power is greater than the reflection at low power
+        # the 1db compression point should be looked in a certain range of phi_s
+        # +/- 1 because we looked at the 1dB deviation
+        if reflection_optimum_power > reflection_low_power + 0.99:
+            max_bound = self.phi_s
+            condition = reflection_low_power + 1.
+        else:
+            max_bound = 5.
+            condition = reflection_low_power - 1.
+
+        # Looking for the 1dB deviation point
+        def func2(phi, f, condition):
+            self.phi_s = phi
+            return  abs(20.*np.log10(abs(self.reflection(f))) - condition)**2.
+
+
+        result =  minimize_scalar(func2,
+        	                      args=[f, condition],
+        						  bounds=(0.00001, max_bound),
+        						  method='bounded').x
+
+        # Setting back the backup input power
+        self.phi_s = backup_phi_s
+
+        if unit.lower() == 'dbm':
+            # From rad to watt
+            result = (cst.hbar/2./cst.e*result*2.*np.pi*f)**2./R0/2.
+            # Return dBm
+            return 10.*np.log10(result/1e-3)
+        elif unit.lower() == 'rad':
+            return result
+        else:
+            raise ValueError("'unit' parameter must be 'dbm' or 'rad'.")
