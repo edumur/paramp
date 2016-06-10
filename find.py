@@ -130,7 +130,7 @@ class Find(object):
             return  -abs(self.reflection(f))
 
         reflection_optimum_power = minimize_scalar(func1,
-                                                   args=[f],
+                                                   args=(f,),
                                                    bounds=(0.00001, 5.),
                                                    method='bounded').x
 
@@ -154,7 +154,7 @@ class Find(object):
 
 
         result =  minimize_scalar(func2,
-        	                      args=[f, condition],
+        	                      args=(f, condition),
         						  bounds=(0.00001, max_bound),
         						  method='bounded').x
 
