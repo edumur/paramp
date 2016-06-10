@@ -400,7 +400,6 @@ class LJPA(JPA, Find):
                              fixed=[None],
                              weight={'f0':10., 'Qc=Qi':1., 'Qc':1., 'BW':1.},
                              update_parameters=False,
-                             full_output=False,
                              verbose=False,
                              method='Nelder-Mead',
                              bounds=None):
@@ -422,11 +421,12 @@ class LJPA(JPA, Find):
             Target resonance frequency in GHz.
         Qc : float
             Target coupling quality factor.
+        BW : float, optional
+            Target bandwidth.
+            If None the bandwidth is free during the optimization.
         update_parameters : bool, optional
             If the differents parameters found after the optimization are set
             to be the parameters of the LPJA instance.
-        full_output : bool, optional
-            To return all optional output, if not, return just the parameters.
         verbose : bool, optional
             To print parameters, targets value and least square value during
             optimization.
@@ -443,6 +443,10 @@ class LJPA(JPA, Find):
                 'SLSQP'
                 'dogleg'
                 'trust-ncg'
+        bounds : list of tuples, optional
+            Bounds (min, max) pairs for each parameter.
+            Only for L-BFGS-B, TNC and SLSQP methods.
+            Use None for one of min or max when there is no bound in that direction.
 
         Return
         ----------
