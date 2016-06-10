@@ -447,35 +447,7 @@ class LJPA(JPA, Find):
         Return
         ----------
         x : np.ndarray
-            For :
-            full_output == False:
-                The solution of the optimization [phi_ac, I_c, L_s, C].
-            full_output == True:
-                x : ndarray
-                    The solution of the optimization.
-                success : bool
-                    Whether or not the optimizer exited successfully.
-                status : int
-                    Termination status of the optimizer. Its value depends on
-                    the underlying solver. Refer to message for details.
-                message : str
-                    Description of the cause of the termination.
-                fun, jac, hess: ndarray
-                    Values of objective function, its Jacobian and its Hessia
-                    if (available). The Hessians may be approximations, see the
-                    documentation of the function in question.
-                hess_inv : object
-                    Inverse of the objective function’s Hessian; may be an
-                    approximation. Not available for all solvers. The type of
-                    this attribute may be either np.ndarray or
-                    scipy.sparse.linalg.LinearOperator.
-                nfev, njev, nhev : int
-                    Number of evaluations of the objective functions and of its
-                    Jacobian and Hessian.
-                nit : int
-                    Number of iterations performed by the optimizer.
-                maxcv : float
-                    The maximum constraint violation.
+            The solution of the optimization ['phi_ac', 'phi_dc', 'I_c', 'L_s', 'C'].
         """
 
         def func(x, f0, Qc, R0, names):
@@ -540,12 +512,16 @@ class LJPA(JPA, Find):
         # Store a backup before the minimization
         backups = params_value
 
-        results = minimize(func,
-                           values,
-                           args=(f0, Qc, R0, names),
-                           method=method,
-                           bounds=bounds)
+        minimize(func,
+                 values,
+                 args=(f0, Qc, R0, names),
+                 method=method,
+                 bounds=bounds)
 
+        # Create a list containing the result of the optimization
+        result = [self.phi_ac, self.phi_dc, self.I_c, self.L_s, self.C]
+
+        # In case the user don't want to update the instance attributes
         if not update_parameters:
 
             self.phi_ac = backups[0]
@@ -554,10 +530,7 @@ class LJPA(JPA, Find):
             self.L_s    = backups[3]
             self.C      = backups[4]
 
-        if full_output:
-            return results
-        else:
-            return results.x
+        return result
 
 
 
