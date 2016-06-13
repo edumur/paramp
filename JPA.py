@@ -35,7 +35,7 @@ class JPA(object):
 
 
     def __init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p,
-                 theta_s=0., f_p=None):
+                 theta_s=0.):
         """
         Implementation of the Pumpistor model of a flux pumped SQUID in the
         three wave mixing case ω_p = ω_s + ω_i.
@@ -91,7 +91,6 @@ class JPA(object):
         self.phi_ac  = phi_ac
         self.theta_p = theta_p
         self.theta_s = theta_s
-        self.f_p = f_p
 
 
 
@@ -134,7 +133,7 @@ class JPA(object):
 
 
 
-    def pumpistor_inductance(self, f=None):
+    def pumpistor_inductance(self, f=None, z_ext=None):
         """
         Return the pumpistor inductance.
         In the case of the non-degenerate case, a parent class must provide
@@ -147,11 +146,14 @@ class JPA(object):
             Signal frequency in hertz.
             Is required in the non-degenerate case but optional for the
             degenerate one.
+        z_ext : float, np.ndarray, optional
+            External impedance seen from the JPA point of view at the idler
+            frequency.
         """
 
-        # If f_p is None, we return the pumpistor inductance of the
+        # If z_ext is None, we return the pumpistor inductance of the
         # degenerate case.
-        if self.f_p is None:
+        if z_ext is None:
 
             return -2.*np.exp(1j*self.delta_theta())/self.delta_f()\
                    *cst.hbar/2./cst.e/self.I_c/abs(np.sin(self.F()))\
@@ -159,29 +161,26 @@ class JPA(object):
                                 - 2.*np.exp(2j*self.delta_theta())*jv(3., self.phi_s))
         else:
 
-            if f is None:
-                raise ValueError('In the non-degenerate case, the pumpistor needs the signal frequency.')
-
             return cst.h/2./cst.e/np.pi/self.I_c/np.sin(self.F())**2./self.delta_f()**2.\
                    *(- 2.*np.cos(self.F())\
                      + 1j*cst.h/2./cst.e/np.pi/self.I_c\
                          *2.*np.pi*(self.f_p - f)\
-                         *self.external_impedance(self.f_p - f).conjugate())
+                         *(1./z_ext).conjugate())
 
 
 
-    def squid_inductance(self, f=None):
+    def squid_inductance(self, f=None, z_ext=None):
         """
         Return the squid inductance which is simply the parallel sum of the
         pumpistor and the Josephson indutance.
         """
 
         return 1./(  1./self.josephson_inductance()\
-                   + 1./self.pumpistor_inductance(f))
+                   + 1./self.pumpistor_inductance(f, z_ext))
 
 
 
-    def pumpistor_impedance(self, f):
+    def pumpistor_impedance(self, f, z_ext=None):
         """
         Return the pumpistor impedance.
 
@@ -199,7 +198,7 @@ class JPA(object):
         if type(f) not in (float, np.ndarray):
             raise ValueError('f parameter must be float or np.ndarray type.')
 
-        return 1j*f*2.*np.pi*self.pumpistor_inductance(f)
+        return 1j*f*2.*np.pi*self.pumpistor_inductance(f, z_ext)
 
 
 
@@ -225,7 +224,7 @@ class JPA(object):
 
 
 
-    def squid_impedance(self, f):
+    def squid_impedance(self, f, z_ext=None):
         """
         Return the squid impedance.
 
@@ -243,11 +242,11 @@ class JPA(object):
         if type(f) not in (float, np.ndarray):
             raise ValueError('f parameter must be float or np.ndarray type')
 
-        return 1j*f*2.*np.pi*self.squid_inductance(f)
+        return 1j*f*2.*np.pi*self.squid_inductance(f, z_ext)
 
 
 
-    def squid_reflection(self, f, z0=50.):
+    def squid_reflection(self, f, z_ext=None, z0=50.):
         """
         Return the reflection of the SQUID.
 
@@ -268,5 +267,5 @@ class JPA(object):
         if type(f) not in (float, np.ndarray):
             raise ValueError('f parameter must be float or np.ndarray type')
 
-        return  (self.squid_impedance(f) - z0)\
-               /(self.squid_impedance(f) + z0)
+        return  (self.squid_impedance(f, z_ext) - z0)\
+               /(self.squid_impedance(f, z_ext) + z0)
