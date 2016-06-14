@@ -85,15 +85,16 @@ class LJPA(JPA, Find):
             If the parameters are not in the good type.
         """
 
-        if type(C) is not float:
+        if not isinstance(C, float):
             raise ValueError('C parameter must be float type.')
-        if type(L_s) is not float:
+        if not isinstance(L_s, float):
             raise ValueError('L_s parameter must be float type')
 
-        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, f_p)
+        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
         self.C   = C
         self.L_s = L_s
+        self.f_p = f_p
 
 
 
@@ -113,13 +114,17 @@ class LJPA(JPA, Find):
             50 ohm.
         """
 
-        o = 2.*np.pi*f
+        if self.f_p is None:
 
-        return 1./(1j*o*self.L_s + 1./(1j*o*self.C + 1./R0))
+            return None
+        else:
+            o = 2.*np.pi*(self.f_p - f)
+
+            return 1./(1j*o*self.L_s + 1./(1j*o*self.C + 1./R0))
 
 
 
-    def impedance(self, f):
+    def impedance(self, f, R0=50.):
         """
         Return the impedance of the resonator formed by the SQUID, the stray
         inductance and the capacitance.
@@ -131,11 +136,12 @@ class LJPA(JPA, Find):
         """
 
         o = 2.*np.pi*f
+        z_ext = self.external_impedance(f, R0)
 
-        return 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance(f))))
+        return 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance(f, z_ext))))
 
 
-    def angular_resonance_frequency(self, f=None):
+    def angular_resonance_frequency(self, f=None, R0=50.):
         """
         Return the angular resonance frequency in rad.Hz of the resonator formed
         by the SQUID, the stray inductance and the capacitance.
@@ -148,10 +154,12 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        return 1./np.sqrt(self.C*(self.L_s + self.squid_inductance(f).real))
+        z_ext = self.external_impedance(f, R0)
+
+        return 1./np.sqrt(self.C*(self.L_s + self.squid_inductance(f, z_ext).real))
 
 
-    def resonance_frequency(self, f=None):
+    def resonance_frequency(self, f=None, R0=50.):
         """
         Return the resonance frequency in Hz of the resonator formed by the
         SQUID, the stray inductance and the capacitance.
@@ -164,12 +172,14 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
+        z_ext = self.external_impedance(f, R0)
+
         return 1./np.sqrt(self.C*(  self.L_s\
-                                  + self.squid_inductance(f).real))/2./np.pi
+                                  + self.squid_inductance(f, z_ext).real))/2./np.pi
 
 
 
-    def equivalent_resistance(self, f=None):
+    def equivalent_resistance(self, f=None, R0=50.):
         """
         Return the resistance in ohm of the equivalente resonator formed by the
         SQUID, the stray inductance and the capacitance.
@@ -182,8 +192,10 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        a = self.squid_inductance(f).real
-        b = self.squid_inductance(f).imag
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
 
         o0 = self.angular_resonance_frequency(f)
 
@@ -191,7 +203,7 @@ class LJPA(JPA, Find):
 
 
 
-    def equivalent_capacitance(self, f=None):
+    def equivalent_capacitance(self, f=None, R0=50.):
         """
         Return the capacitance in farad of the equivalente resonator formed by
         the SQUID, the stray inductance and the capacitance.
@@ -204,14 +216,16 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        a = self.squid_inductance(f).real
-        b = self.squid_inductance(f).imag
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
 
         return self.C/2.*(3. - (self.L_s + a)**2./(b**2. + (self.L_s + a)**2.))
 
 
 
-    def equivalent_inductance(self, f=None):
+    def equivalent_inductance(self, f=None, R0=50.):
         """
         Return the inductance in henry of the equivalente resonator formed by
         the SQUID, the stray inductance and the capacitance.
@@ -224,14 +238,16 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        a = self.squid_inductance(f).real
-        b = self.squid_inductance(f).imag
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
 
         return 2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
 
 
 
-    def equivalent_impedance(self, f):
+    def equivalent_impedance(self, f, R0=50.):
         """
         Return the impedance of the equivalente resonator formed by the SQUID,
         the stray inductance and the capacitance.
@@ -244,13 +260,13 @@ class LJPA(JPA, Find):
 
         o = 2.*np.pi*f
 
-        return 1./(1./self.equivalent_resistance(f)\
-                   + 1j*o*self.equivalent_capacitance(f)\
-                   + 1./1j/o/self.equivalent_inductance(f))
+        return 1./(1./self.equivalent_resistance(f, R0)\
+                   + 1j*o*self.equivalent_capacitance(f, R0)\
+                   + 1./1j/o/self.equivalent_inductance(f, R0))
 
 
 
-    def equivalent_angular_resonance_frequency(self, f=None):
+    def equivalent_angular_resonance_frequency(self, f=None, R0=50.):
         """
         Return the angular resonance frequency in rad.Hz of the equivalent_capacitance
         resonator formed by the SQUID, the stray inductance and the capacitance.
@@ -263,12 +279,12 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        return 1./np.sqrt(self.equivalent_capacitance(f)\
-                          *self.equivalent_inductance(f))/2./np.pi
+        return 1./np.sqrt(self.equivalent_capacitance(f, R0)\
+                          *self.equivalent_inductance(f, R0))/2./np.pi
 
 
 
-    def equivalent_resonance_frequency(self, f=None):
+    def equivalent_resonance_frequency(self, f=None, R0=50.):
         """
         Return the resonance frequency in Hz of the equivalent resonator formed
         by the SQUID, the stray inductance and the capacitance.
@@ -281,12 +297,12 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        return 1./np.sqrt(self.equivalent_capacitance(f)\
-                          *self.equivalent_inductance(f))/2./np.pi
+        return 1./np.sqrt(self.equivalent_capacitance(f, R0)\
+                          *self.equivalent_inductance(f, R0))/2./np.pi
 
 
 
-    def internal_quality_factor(self, f=None):
+    def internal_quality_factor(self, f=None, R0=50.):
         """
         Return the internal quality factor (Qi) of the equivalente resonator
         formed by the SQUID, the stray inductance and the capacitance.
@@ -301,8 +317,10 @@ class LJPA(JPA, Find):
             degenerate one.
         """
 
-        a = self.squid_inductance(f).real
-        b = self.squid_inductance(f).imag
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
 
         return -(self.L_s+a)/2./b*(3 - (self.L_s+a)**2./(b**2.+(self.L_s+a)**2.))
 
@@ -324,8 +342,8 @@ class LJPA(JPA, Find):
             losses line so real and 50 ohm.
         """
 
-        return R0*np.sqrt( self.equivalent_capacitance(f)\
-                           /self.equivalent_inductance(f))
+        return R0*np.sqrt( self.equivalent_capacitance(f, R0)\
+                           /self.equivalent_inductance(f, R0))
 
 
 
@@ -345,7 +363,7 @@ class LJPA(JPA, Find):
             losses line so real and 50 ohm.
         """
 
-        return 1./(  1./self.internal_quality_factor(f)\
+        return 1./(  1./self.internal_quality_factor(f, R0)\
                    + 1./self.coupling_quality_factor(f, R0))
 
 
@@ -366,7 +384,9 @@ class LJPA(JPA, Find):
             losses line so real and 50 ohm.
         """
 
-        a = self.squid_inductance(f).real
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
 
         return (R0 - np.sqrt(R0**2. - 4.*np.sqrt((self.L_s + a)**3./self.C)))/2.
 
@@ -388,8 +408,10 @@ class LJPA(JPA, Find):
             losses line so real and 50 ohm.
         """
 
-        a = self.squid_inductance(f).real
-        b = self.squid_inductance(f).imag
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
 
         return (self.L_s + a)**3./b**2./(b - R0)**2.
 

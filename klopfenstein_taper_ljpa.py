@@ -30,16 +30,16 @@ from scipy.optimize import minimize, fsolve
 from multiprocessing import Pool
 import itertools
 
-from LJPA import LJPA
-from klopfenstein_discretization import inter_func
+from JPA import JPA
+from klopfenstein_discretization import reflection_discretization, external_discretization
 
-class KlopfensteinTaperLJPA(LJPA):
+class KlopfensteinTaperLJPA(JPA):
 
 
 
     def __init__(self, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p,
                        Z_l, l, g_m, L_l, C_l,
-                       theta_s = 0.):
+                       theta_s=0., f_p=None):
         """
         Implementation of the Klopfenstein taper from R. W. Klopfenstein:
         "A Transmission Line Taper of Improved Design"
@@ -78,8 +78,10 @@ class KlopfensteinTaperLJPA(LJPA):
         C_l : float
             capacitance per unit length of the taper line in farad per meter.
         theta_s : {0.} float, optional
-            Phase of the pump in rad, default is zero which implies that that\
+            Phase of the pump in rad, default is zero which implies that
             the signal phase is the reference.
+        f_p : float, optional
+            Pump frequency. If None we assume  f_p = 2*f_s.
 
         Raises
         ------
@@ -87,24 +89,32 @@ class KlopfensteinTaperLJPA(LJPA):
             If the parameters are not in the good type.
         """
 
-        if type(Z_l) is not float:
+        if not isinstance(Z_l, float):
             raise ValueError('Z_l parameter must be float type.')
-        if type(l) is not float:
+        if not isinstance(l, float):
             raise ValueError('l parameter must be float type.')
-        if type(g_m) is not float:
+        if not isinstance(g_m, float):
             raise ValueError('g_m parameter must be float type.')
-        if type(L_l) is not float:
+        if not isinstance(L_l, float):
             raise ValueError('L_l parameter must be float type.')
-        if type(C_l) is not float:
+        if not isinstance(C_l, float):
             raise ValueError('C_l parameter must be float type.')
 
-        LJPA.__init__(self, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
-        self.zl = Z_l
-        self.l  = l
-        self.gm = g_m
-        self.cl = C_l
-        self.ll = L_l
+        self.zl  = Z_l
+        self.l   = l
+        self.gm  = g_m
+        self.cl  = C_l
+        self.ll  = L_l
+
+        self.C = C
+        self.L_s = L_s
+
+        self.f_p = f_p
+
+
+
 
 
 
@@ -283,6 +293,68 @@ class KlopfensteinTaperLJPA(LJPA):
 
 
 
+    def external_impedance(self, f, n=1e2, R0=50., as_theory=False):
+        """
+        Return the impedance of the electrical environment seen by the SQUID.
+        We assume the circuit to be 50 ohm matched.
+
+        Use multithreading for faster calculation.
+
+        Parameters
+        ----------
+        f : float, np.ndarray
+            Signal frequency in hertz.
+        n : float, optional
+            Number of discret elements used to model the taper line.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            50 ohm.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impeance
+            calculation to try to mimic the theoritical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoritical expectation.
+        """
+
+        # Calculate the different characteristic impedance of the different
+        # part of the transnmission line
+        # We inverse it because of the SQUID point of view
+        z = self.characteristic_impedance(np.linspace(0., self.l, n))[::-1]
+
+        # Calculate the corresponding L_l and C_l for the elements
+        ll, cl = self.find_ll_cl(z)
+
+        if type(f) is not np.ndarray:
+            f = [f]
+
+        # Create a pool a thread for fast computation
+        # We look at the impedance at the pump frequency
+        pool = Pool()
+        result = pool.map(external_discretization,
+                          itertools.izip(self.f_p - f,
+                                         itertools.repeat(ll),
+                                         itertools.repeat(cl),
+                                         itertools.repeat(n),
+                                         itertools.repeat(self.l),
+                                         itertools.repeat(self.zl),
+                                         itertools.repeat(self.C),
+                                         itertools.repeat(self.L_s),
+                                         itertools.repeat(self.I_c),
+                                         itertools.repeat(self.phi_s),
+                                         itertools.repeat(self.phi_dc),
+                                         itertools.repeat(self.phi_ac),
+                                         itertools.repeat(self.theta_p),
+                                         itertools.repeat(self.theta_s),
+                                         itertools.repeat(as_theory),
+                                         itertools.repeat(self.f_p)))
+
+        pool.close()
+        pool.join()
+
+        return np.array(result)
+
+
+
     def reflection(self, f, n=1e2, as_theory=False):
         """
         Return the reflection of the taper.
@@ -315,29 +387,37 @@ class KlopfensteinTaperLJPA(LJPA):
 
         # Calculate the corresponding L_l and C_l for the elements
         ll, cl = self.find_ll_cl(z)
-        z = np.sqrt(ll/cl)
-        beta = ll*cl
 
         if type(f) is not np.ndarray:
             f = [f]
 
+        # If the pump frequency is Non, we don't have to calculate the impedance
+        # seen by the pumpistor
+        if self.f_p is not None:
+            z_ext = self.external_impedance(f, n, 50., as_theory)
+        else:
+            z_ext = itertools.repeat(None)
+
         # Create a pool a thread for fast computation
         pool = Pool()
-        result = pool.map(inter_func,
-        itertools.izip(f, itertools.repeat(beta),
-                            itertools.repeat(z),
-                            itertools.repeat(n),
-                            itertools.repeat(self.l),
-                            itertools.repeat(self.zl),
-                            itertools.repeat(self.C),
-                            itertools.repeat(self.L_s),
-                            itertools.repeat(self.I_c),
-                            itertools.repeat(self.phi_s),
-                            itertools.repeat(self.phi_dc),
-                            itertools.repeat(self.phi_ac),
-                            itertools.repeat(self.theta_p),
-                            itertools.repeat(self.theta_s),
-                            itertools.repeat(as_theory)))
+        result = pool.map(reflection_discretization,
+                          itertools.izip(f,
+                                         z_ext,
+                                         itertools.repeat(ll),
+                                         itertools.repeat(cl),
+                                         itertools.repeat(n),
+                                         itertools.repeat(self.l),
+                                         itertools.repeat(self.zl),
+                                         itertools.repeat(self.C),
+                                         itertools.repeat(self.L_s),
+                                         itertools.repeat(self.I_c),
+                                         itertools.repeat(self.phi_s),
+                                         itertools.repeat(self.phi_dc),
+                                         itertools.repeat(self.phi_ac),
+                                         itertools.repeat(self.theta_p),
+                                         itertools.repeat(self.theta_s),
+                                         itertools.repeat(as_theory),
+                                         itertools.repeat(self.f_p)))
 
         pool.close()
         pool.join()
