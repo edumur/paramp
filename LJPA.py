@@ -486,16 +486,39 @@ class LJPA(JPA, Find):
                       + relative_error_BW)
 
             if verbose:
+                print '     ----------'
                 print 'Parameters:'
-                print '    phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0, '\
-                      'phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0, '\
-                      'I_c = '+str(round(self.I_c*1e6, 3))+ ' uA, '\
-                      'L_s = '+str(round(self.L_s*1e12, 3))+ ' pH, '\
-                      'C = '+str(round(self.C*1e12, 3))+ ' pF'
+                if len(names) != 5:
+                    print '    Fixed:'
+                    if 'phi_ac' not in names:
+                        print '        phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0'
+                    if 'phi_dc' not in names:
+                        print '        phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0'
+                    if 'I_c' not in names:
+                        print '        I_c = '+str(round(self.I_c*1e6, 3))+ ' uA'
+                    if 'L_s' not in names:
+                        print '        L_s = '+str(round(self.L_s*1e12, 3))+ ' pH'
+                    if 'C' not in names:
+                        print '        C = '+str(round(self.C*1e12, 3))+ ' pF'
+                print '    Optimized:'
+                if 'phi_ac' in names:
+                    print '        phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0'
+                if 'phi_dc' in names:
+                    print '        phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0'
+                if 'I_c' in names:
+                    print '        I_c = '+str(round(self.I_c*1e6, 3))+ ' uA'
+                if 'L_s' in names:
+                    print '        L_s = '+str(round(self.L_s*1e12, 3))+ ' pH'
+                if 'C' in names:
+                    print '        C = '+str(round(self.C*1e12, 3))+ ' pF'
+                print '        '
                 print 'Results:'
-                print '    f_0 = '+str(round(current_f0/1e9, 3))+' GHz, '\
-                      'Q_c = '+str(round(current_Qc, 3))+' '\
-                      'Q_i = '+str(round(current_Qi, 3))
+                print '    f_0 = '+str(round(current_f0/1e9, 3))+' GHz, weight: '+str(weight['f0'])
+                print '    Q_c = '+str(round(current_Qc, 3))+', weight: '+str(weight['Qc'])
+                print '    Q_i = '+str(round(current_Qi, 3))+', weight: '+str(weight['Qc=Qi'])
+                if BW is not None:
+                    print '    BW = '+str(round(current_BW/1e6, 3))+' MHz, weight: '+str(weight['BW'])
+                print ''
                 print 'Least square:'
                 print '    '+str(y)
                 print ''
