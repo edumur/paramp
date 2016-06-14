@@ -85,9 +85,9 @@ class LJPA(JPA, Find):
             If the parameters are not in the good type.
         """
 
-        if type(C) is not float:
+        if not isinstance(C, float):
             raise ValueError('C parameter must be float type.')
-        if type(L_s) is not float:
+        if not isinstance(L_s, float):
             raise ValueError('L_s parameter must be float type')
 
         JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)

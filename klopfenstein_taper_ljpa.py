@@ -89,15 +89,15 @@ class KlopfensteinTaperLJPA(JPA):
             If the parameters are not in the good type.
         """
 
-        if type(Z_l) is not float:
+        if not isinstance(Z_l, float):
             raise ValueError('Z_l parameter must be float type.')
-        if type(l) is not float:
+        if not isinstance(l, float):
             raise ValueError('l parameter must be float type.')
-        if type(g_m) is not float:
+        if not isinstance(g_m, float):
             raise ValueError('g_m parameter must be float type.')
-        if type(L_l) is not float:
+        if not isinstance(L_l, float):
             raise ValueError('L_l parameter must be float type.')
-        if type(C_l) is not float:
+        if not isinstance(C_l, float):
             raise ValueError('C_l parameter must be float type.')
 
         JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)

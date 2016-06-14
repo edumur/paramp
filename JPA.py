@@ -72,17 +72,17 @@ class JPA(object):
             If the parameters are not in the good type.
         """
 
-        if type(I_c) is not float:
+        if not isinstance(I_c, float):
             raise ValueError('I_c parameter must be float type.')
-        if type(phi_s) is not float:
+        if not isinstance(phi_s, float):
             raise ValueError('phi_s parameter must be float type')
-        if type(phi_dc) is not float:
+        if not isinstance(phi_dc, float):
             raise ValueError('phi_dc parameter must be float type.')
-        if type(phi_ac) is not float:
+        if not isinstance(phi_ac, float):
             raise ValueError('phi_ac parameter must be float type.')
-        if type(theta_p) is not float:
+        if not isinstance(theta_p, float):
             raise ValueError('theta_p parameter must be float type.')
-        if type(theta_s) is not float:
+        if not isinstance(theta_s, float):
             raise ValueError('theta_s parameter must be float type.')
 
         self.I_c     = I_c
