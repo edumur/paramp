@@ -65,8 +65,8 @@ class Find(object):
 
         f0 = self.find_resonance_frequency(R0)
         half_max = (  abs(self.reflection(f0, R0))**2.\
-                    + abs(self.reflection(f0+100e9, R0))**2.)/2.
-        df = minimize_scalar(func, bounds=(1., 100e9),
+                    + abs(self.reflection(f0+10e9, R0))**2.)/2.
+        df = minimize_scalar(func, bounds=(1., 20e9),
                                    method='bounded',
                                    args=(half_max, R0)).x
 
@@ -95,7 +95,7 @@ class Find(object):
 
         return minimize_scalar(func,
 		                       args=(R0,),
-							   bounds=(1., 100e9),
+							   bounds=(1., 20e9),
 							   method='bounded').x
 
 
