@@ -36,6 +36,22 @@ class Klopfenstein_discretization(JPA):
 
 
 
+    def matrix_chain(self, arg, z):
+        """
+        Return the ABCD matrix of the taper
+        """
+
+        # Calculate the chain of matrices representing the Klopfenstein tapper
+        m = np.array([np.cos(arg), 1j*z*np.sin(arg), 1j/z*np.sin(arg), np.cos(arg)])
+
+        # Give the good shape to the array for the matrix product
+        m = m.transpose()
+        m.shape = (len(z), 2, 2)
+
+        # Calculate the chain matrix prodcut
+        return reduce(np.dot, m)
+
+
     def reflection_discretization(self, f, z_ext, z, prod, zl, as_theory):
         """
         Return the reflection of the Klopfenstein taper.
@@ -65,16 +81,8 @@ class Klopfenstein_discretization(JPA):
 
         o = 2.*np.pi*f
 
-        # Calculate the chain of matrices representing the Klopfenstein tapper
-        a = o*prod
-        m = np.array([np.cos(a), 1j*z*np.sin(a), 1j/z*np.sin(a), np.cos(a)])
-
-        # Give the good shape to the array for the matrix product
-        m = m.transpose()
-        m.shape = (len(z), 2, 2)
-
-        # Calculate the chain matrix prodcut
-        M = reduce(np.dot, m)
+        # Obain the taper ABCD matrix
+        M = self.matrix_chain(o*prod, z)
 
         # Calculate the LJPA impedance
         z_ljpa = 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance(f, z_ext))))
@@ -118,19 +126,10 @@ class Klopfenstein_discretization(JPA):
             the theoritical expectation.
         """
 
-        # The idler angular frequency
-        o = 2.*np.pi*(self.f_p - f)
+        o = 2.*np.pi*f
 
-        # Calculate the chain of matrices representing the Klopfenstein tapper
-        a = o*prod
-        m = np.array([np.cos(a), 1j*z*np.sin(a), 1j/z*np.sin(a), np.cos(a)])
-
-        # Give the good shape to the array for the matrix product
-        m = m.transpose()
-        m.shape = (len(z), 2, 2)
-
-        # Calculate the chain matrix prodcut
-        M = reduce(np.dot, m)
+        # Obain the taper ABCD matrix
+        M = self.matrix_chain(o*prod, z)
 
         # We end the chain by two elements:
         # 1 - a load impedance to the ground
