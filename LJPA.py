@@ -120,8 +120,7 @@ class LJPA(JPA, Find):
         else:
             o = 2.*np.pi*(self.f_p - f)
 
-            return 1./(1j*o*self.L_s + 1./(1j*o*self.C + 1./R0))
-
+            return 1j*o*self.L_s + 1./(1j*o*self.C + 1./R0)
 
 
     def impedance(self, f, R0=50.):
