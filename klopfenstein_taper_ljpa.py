@@ -322,7 +322,13 @@ class KlopfensteinTaperLJPA(JPA):
         z = self.characteristic_impedance(np.linspace(0., self.l, n))[::-1]
 
         # Calculate the corresponding L_l and C_l for the elements
-        ll, cl = self.find_ll_cl(z)
+        if as_theory:
+            ll = np.ones_like(z)*self.ll
+            cl = np.ones_like(z)*self.cl
+        else:
+            ll, cl = self.find_ll_cl(z)
+
+        prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
         if type(f) is not np.ndarray:
             f = [f]
@@ -332,10 +338,8 @@ class KlopfensteinTaperLJPA(JPA):
         pool = Pool()
         result = pool.map(external_discretization,
                           itertools.izip(self.f_p - f,
-                                         itertools.repeat(ll),
-                                         itertools.repeat(cl),
-                                         itertools.repeat(n),
-                                         itertools.repeat(self.l),
+                                         itertools.repeat(z),
+                                         itertools.repeat(prod),
                                          itertools.repeat(self.zl),
                                          itertools.repeat(self.C),
                                          itertools.repeat(self.L_s),
@@ -386,7 +390,13 @@ class KlopfensteinTaperLJPA(JPA):
         z = self.characteristic_impedance(np.linspace(0., self.l, n))
 
         # Calculate the corresponding L_l and C_l for the elements
-        ll, cl = self.find_ll_cl(z)
+        if as_theory:
+            ll = np.ones_like(z)*self.ll
+            cl = np.ones_like(z)*self.cl
+        else:
+            ll, cl = self.find_ll_cl(z)
+
+        prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
         if type(f) is not np.ndarray:
             f = [f]
@@ -403,10 +413,8 @@ class KlopfensteinTaperLJPA(JPA):
         result = pool.map(reflection_discretization,
                           itertools.izip(f,
                                          z_ext,
-                                         itertools.repeat(ll),
-                                         itertools.repeat(cl),
-                                         itertools.repeat(n),
-                                         itertools.repeat(self.l),
+                                         itertools.repeat(z),
+                                         itertools.repeat(prod),
                                          itertools.repeat(self.zl),
                                          itertools.repeat(self.C),
                                          itertools.repeat(self.L_s),

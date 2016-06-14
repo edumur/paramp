@@ -36,7 +36,7 @@ class Klopfenstein_discretization(JPA):
 
 
 
-    def reflection_discretization(self, f, z_ext, ll, cl, n, l, zl, as_theory):
+    def reflection_discretization(self, f, z_ext, z, prod, zl, as_theory):
         """
         Return the reflection of the Klopfenstein taper.
         To do so, the taper impedance is discretised in n sections.
@@ -54,10 +54,6 @@ class Klopfenstein_discretization(JPA):
             Inductance per unit length along the taper length in henry per meter
         cl : np.ndarray
             Capacitance per unit length along the taper length in farad per meter
-        n : float
-            Number of discret elements used to model the taper line.
-        l : float
-            Length of the taper in meter
         zl : float
             Load impedance
         as_theory : bool
@@ -70,12 +66,12 @@ class Klopfenstein_discretization(JPA):
         o = 2.*np.pi*f
 
         # Calculate the chain of matrices representing the Klopfenstein tapper
-        a = o*np.sqrt(ll*cl)*l/(n - 1.)
-        m = np.array([np.cos(a), 1j*np.sqrt(ll/cl)*np.sin(a), 1j/np.sqrt(ll/cl)*np.sin(a), np.cos(a)])
+        a = o*prod
+        m = np.array([np.cos(a), 1j*z*np.sin(a), 1j/z*np.sin(a), np.cos(a)])
 
         # Give the good shape to the array for the matrix product
         m = m.transpose()
-        m.shape = (n, 2, 2)
+        m.shape = (len(z), 2, 2)
 
         # Calculate the chain matrix prodcut
         M = reduce(np.dot, m)
@@ -103,7 +99,7 @@ class Klopfenstein_discretization(JPA):
 
 
 
-    def external_discretization(self, f, ll, cl, n, l, zl, as_theory):
+    def external_discretization(self, f, z, prod, zl, as_theory):
         """
         Return the impedance of the electrical environment seen by the SQUID.
         We assume the circuit to be 50 ohm matched.
@@ -112,8 +108,6 @@ class Klopfenstein_discretization(JPA):
         ----------
         f : float
             Signal frequency in hertz.
-        n : float, optional
-            Number of discret elements used to model the taper line.
         R0 : float, optional
             The characteristic impedance of the incoming line. Assumed to be
             50 ohm.
@@ -128,12 +122,12 @@ class Klopfenstein_discretization(JPA):
         o = 2.*np.pi*(self.f_p - f)
 
         # Calculate the chain of matrices representing the Klopfenstein tapper
-        a = o*np.sqrt(ll*cl)*l/(n - 1.)
-        m = np.array([np.cos(a), 1j*np.sqrt(ll/cl)*np.sin(a), 1j/np.sqrt(ll/cl)*np.sin(a), np.cos(a)])
+        a = o*prod
+        m = np.array([np.cos(a), 1j*z*np.sin(a), 1j/z*np.sin(a), np.cos(a)])
 
         # Give the good shape to the array for the matrix product
         m = m.transpose()
-        m.shape = (n, 2, 2)
+        m.shape = (len(z), 2, 2)
 
         # Calculate the chain matrix prodcut
         M = reduce(np.dot, m)
@@ -157,18 +151,18 @@ class Klopfenstein_discretization(JPA):
 
 def reflection_discretization(param):
 
-    f, z_ext, ll, cl, n, l, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+    f, z_ext, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
 
     a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
-    return a.reflection_discretization(f, z_ext, ll, cl, n, l, zl, as_theory)
+    return a.reflection_discretization(f, z_ext, z, prod, zl, as_theory)
 
 
 
 def external_discretization(param):
 
-    f, ll, cl, n, l, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
 
     a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
-    return a.external_discretization(f, ll, cl, n, l, zl, as_theory)
+    return a.external_discretization(f, z, prod, zl, as_theory)
