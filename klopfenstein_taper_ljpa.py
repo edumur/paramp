@@ -432,6 +432,8 @@ class KlopfensteinTaperLJPA(JPA):
 
         return np.array(result)
 
+
+
     def impedance(self, f, R0=50, n=1e2, as_theory=False):
             """
             Return the impedance of the taper.
@@ -451,5 +453,7 @@ class KlopfensteinTaperLJPA(JPA):
                 Use this parameter to test if this method can correctly mimic
                 the theoritical expectation.
             """
+            
             r = self.reflection(f, n, as_theory)
-            return R0*(1-r)/(1+r)
+            
+            return R0*(1+r)/(1-r)
