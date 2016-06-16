@@ -31,9 +31,10 @@ from multiprocessing import Pool
 import itertools
 
 from JPA import JPA
+from find import Find
 from klopfenstein_discretization import reflection_discretization, external_discretization
 
-class KlopfensteinTaperLJPA(JPA):
+class KlopfensteinTaperLJPA(JPA, Find):
 
 
 
@@ -330,8 +331,9 @@ class KlopfensteinTaperLJPA(JPA):
 
         prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
+        # We need iterable frequency for the parallelization
         if type(f) is not np.ndarray:
-            f = [f]
+            f = np.array([f])
 
         # Create a pool a thread for fast computation
         # We look at the impedance at the pump frequency
@@ -398,8 +400,9 @@ class KlopfensteinTaperLJPA(JPA):
 
         prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
+        # We need iterable frequency for the parallelization
         if type(f) is not np.ndarray:
-            f = [f]
+            f = np.array([f])
 
         # If the pump frequency is Non, we don't have to calculate the impedance
         # seen by the pumpistor
@@ -430,4 +433,9 @@ class KlopfensteinTaperLJPA(JPA):
         pool.close()
         pool.join()
 
-        return np.array(result)
+        # If the user sent a float frequency, we return a float
+        if len(result) == 1:
+            return result[0]
+        # If the user a np.ndarray frequency, we return a np.ndarray
+        else:
+            return np.array(result)
