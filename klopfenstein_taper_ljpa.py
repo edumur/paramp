@@ -333,7 +333,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
         # We need iterable frequency for the parallelization
         if type(f) is not np.ndarray:
-            f = np.array([f])
+            f = [f]
 
         # Create a pool a thread for fast computation
         # We look at the impedance at the pump frequency
@@ -402,7 +402,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
         # We need iterable frequency for the parallelization
         if type(f) is not np.ndarray:
-            f = np.array([f])
+            f = [f]
 
         # If the pump frequency is Non, we don't have to calculate the impedance
         # seen by the pumpistor
