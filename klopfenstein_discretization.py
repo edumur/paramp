@@ -140,8 +140,8 @@ class Klopfenstein_discretization(JPA):
         # We start the chain by two elements:
         # 1 - The stray inductance
         # 2 - The resonator capacitance to ground
-        M = np.dot(np.array([[1., 1j*o*self.L_s], [0., 1.]]), M)
         M = np.dot(np.array([[1., 0.], [1j*o*self.C, 1.]]), M)
+        M = np.dot(np.array([[1., 1j*o*self.L_s], [0., 1.]]), M)
 
         # Return the z11 impedance element
         return M.item(0)/M.item(2)
