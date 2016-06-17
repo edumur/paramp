@@ -465,3 +465,166 @@ class KlopfensteinTaperLJPA(JPA, Find):
             r = self.reflection(f, n, as_theory)
 
             return R0*(1+r)/(1-r)
+
+
+
+    def optimized_KLJPA(self, f0, BW=None,
+                             R0=50.,
+                             fixed=[None],
+                             weight={'f0':10., 'R0' : 1., 'BW':1.},
+                             update_parameters=False,
+                             verbose=False,
+                             method='Nelder-Mead',
+                             bounds=None):
+        """
+        Optimized the different parameters of the LJPA to reached a target
+        frequency and coupling quality factor.
+        This is done by minimizing the relative error of three values:
+            1 - the resonance frequency,
+            2 - the coupling quality factor,
+            3 - the absolute difference between the coupling and internal
+                quality factor.
+            4 (optional) - the bandwidth.
+
+        Work only in the degenerate case !
+
+        Parameters
+        ----------
+        f0 : float
+            Target resonance frequency in GHz.
+        Qc : float
+            Target coupling quality factor.
+        BW : float, optional
+            Target bandwidth.
+            If None the bandwidth is free during the optimization.
+        update_parameters : bool, optional
+            If the differents parameters found after the optimization are set
+            to be the parameters of the LPJA instance.
+        verbose : bool, optional
+            To print parameters, targets value and least square value during
+            optimization.
+        method : str, optional
+            Type of solver. Should be one of
+                'Nelder-Mead' - default
+                'Powell'
+                'CG'
+                'BFGS'
+                'Newton-CG'
+                'L-BFGS-B'
+                'TNC'
+                'COBYLA'
+                'SLSQP'
+                'dogleg'
+                'trust-ncg'
+        bounds : list of tuples, optional
+            Bounds (min, max) pairs for each parameter.
+            Only for L-BFGS-B, TNC and SLSQP methods.
+            Use None for one of min or max when there is no bound in that direction.
+
+        Return
+        ----------
+        x : np.ndarray
+            The solution of the optimization ['phi_ac', 'phi_dc', 'I_c', 'L_s', 'C'].
+        """
+
+        def func(x, f0, R0, names):
+
+            x = abs(x)
+
+            for value, name in zip(x, names):
+                if name == 'phi_ac':
+                    self.phi_ac = value
+                elif name == 'phi_dc':
+                    self.phi_dc = value
+                elif name == 'I_c':
+                    self.I_c = value
+                elif name == 'L_s':
+                    self.L_s = value
+                elif name == 'C':
+                    self.C = value
+
+            current_f0 = self.find_resonance_frequency(R0)
+            current_real_impedance = self.impedance(current_f0, R0=R0).real
+
+            if BW is not None:
+                current_BW = self.find_reflection_fwhm()
+                relative_error_BW = ((current_BW - BW)/BW*weight['BW'])**2.
+            else:
+                relative_error_BW = 0.
+
+            y =  np.sum(((current_f0 - f0)/f0*weight['f0'])**2.\
+                      + ((current_real_impedance + R0)/R0*weight['R0'])**2.\
+                      + relative_error_BW)
+
+            if verbose:
+                print '     ----------'
+                print 'Parameters:'
+                if len(names) != 5:
+                    print '    Fixed:'
+                    if 'phi_ac' not in names:
+                        print '        phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0'
+                    if 'phi_dc' not in names:
+                        print '        phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0'
+                    if 'I_c' not in names:
+                        print '        I_c = '+str(round(self.I_c*1e6, 3))+ ' uA'
+                    if 'L_s' not in names:
+                        print '        L_s = '+str(round(self.L_s*1e12, 3))+ ' pH'
+                    if 'C' not in names:
+                        print '        C = '+str(round(self.C*1e12, 3))+ ' pF'
+                print '    Optimized:'
+                if 'phi_ac' in names:
+                    print '        phi_ac = '+str(round(self.phi_ac, 3))+ ' phi_0'
+                if 'phi_dc' in names:
+                    print '        phi_dc = '+str(round(self.phi_dc, 3))+ ' phi_0'
+                if 'I_c' in names:
+                    print '        I_c = '+str(round(self.I_c*1e6, 3))+ ' uA'
+                if 'L_s' in names:
+                    print '        L_s = '+str(round(self.L_s*1e12, 3))+ ' pH'
+                if 'C' in names:
+                    print '        C = '+str(round(self.C*1e12, 3))+ ' pF'
+                print '        '
+                print 'Results:'
+                print '    f_0 = '+str(round(current_f0/1e9, 3))+' GHz, weight: '+str(weight['f0'])
+                print '    real impedance  = '+str(round(current_real_impedance, 3))+' ohm, weight: '+str(weight['R0'])
+                if BW is not None:
+                    print '    BW = '+str(round(current_BW/1e6, 3))+' MHz, weight: '+str(weight['BW'])
+                print ''
+                print 'Least square:'
+                print '    '+str(y)
+                print ''
+
+            return y
+
+        # Get a list of variables parameters name and value
+        params_name  = ['phi_ac', 'phi_dc', 'I_c', 'L_s', 'C']
+        params_value = [self.phi_ac, self.phi_dc, self.I_c, self.L_s, self.C]
+
+        values = []
+        names  = []
+        for param_name, param_value in zip(params_name, params_value):
+            if param_name not in fixed:
+                names.append(param_name)
+                values.append(param_value)
+
+        # Store a backup before the minimization
+        backups = params_value
+
+        minimize(func,
+                 values,
+                 args=(f0, R0, names),
+                 method=method,
+                 bounds=bounds)
+
+        # Create a list containing the result of the optimization
+        result = [self.phi_ac, self.phi_dc, self.I_c, self.L_s, self.C]
+
+        # In case the user don't want to update the instance attributes
+        if not update_parameters:
+
+            self.phi_ac = backups[0]
+            self.phi_dc = backups[1]
+            self.I_c    = backups[2]
+            self.L_s    = backups[3]
+            self.C      = backups[4]
+
+        return result
