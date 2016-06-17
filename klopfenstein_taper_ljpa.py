@@ -478,22 +478,17 @@ class KlopfensteinTaperLJPA(JPA, Find):
                              bounds=None):
         """
         Optimized the different parameters of the LJPA to reached a target
-        frequency and coupling quality factor.
+        frequency.
         This is done by minimizing the relative error of three values:
             1 - the resonance frequency,
-            2 - the coupling quality factor,
-            3 - the absolute difference between the coupling and internal
+            2 - the absolute difference between the coupling and internal
                 quality factor.
-            4 (optional) - the bandwidth.
-
-        Work only in the degenerate case !
+            3 (optional) - the bandwidth.
 
         Parameters
         ----------
         f0 : float
             Target resonance frequency in GHz.
-        Qc : float
-            Target coupling quality factor.
         BW : float, optional
             Target bandwidth.
             If None the bandwidth is free during the optimization.
