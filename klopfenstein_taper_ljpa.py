@@ -431,3 +431,29 @@ class KlopfensteinTaperLJPA(JPA):
         pool.join()
 
         return np.array(result)
+
+
+
+    def impedance(self, f, R0=50, n=1e2, as_theory=False):
+            """
+            Return the impedance of the taper.
+
+            Parameters
+            ----------
+            f : float, np.ndarray
+                Frequency in GHz.
+            R0 : float, optional
+                The characteristic impedance of the incoming line. Assumed to be
+                50 ohm.
+            n : float, optional
+                Number of discret elements used to model the taper line.
+            as_theory : bool, optional
+                If true use the load impedance of the characteristic impeance
+                calculation to try to mimic the theoritical reflection.
+                Use this parameter to test if this method can correctly mimic
+                the theoritical expectation.
+            """
+            
+            r = self.reflection(f, n, as_theory)
+            
+            return R0*(1+r)/(1-r)
