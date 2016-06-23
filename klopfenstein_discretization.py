@@ -95,7 +95,6 @@ class Klopfenstein_discretization(JPA):
         else:
             M = np.dot(M, np.array([[1., 0.],[1./z_ljpa, 1.]]))
 
-        M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
 
         # Compute the reflection from the array elements
         a = M.item(0)
@@ -145,9 +144,7 @@ class Klopfenstein_discretization(JPA):
 
             # We end the chain by two elements:
             # 1 - a load impedance to the ground
-            # 2 - a huge impedance to the circuit
             M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
-            M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
 
             # We start the chain by two elements:
             # 1 - The stray inductance
