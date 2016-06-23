@@ -73,10 +73,10 @@ class Klopfenstein_discretization(JPA):
         zl : float
             Load impedance
         as_theory : bool
-            If true use the load impedance of the characteristic impeance
-            calculation to try to mimic the theoritical reflection.
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
             Use this parameter to test if this method can correctly mimic
-            the theoritical expectation.
+            the theoretical expectation.
         """
 
         o = 2.*np.pi*f
@@ -107,7 +107,7 @@ class Klopfenstein_discretization(JPA):
 
 
 
-    def external_discretization(self, f, z, prod, zl, as_theory):
+    def external_discretization(self, f, z, prod, zl, as_theory, simple_ext):
         """
         Return the impedance of the electrical environment seen by the SQUID.
         We assume the circuit to be 50 ohm matched.
@@ -120,31 +120,45 @@ class Klopfenstein_discretization(JPA):
             The characteristic impedance of the incoming line. Assumed to be
             50 ohm.
         as_theory : bool, optional
-            If true use the load impedance of the characteristic impeance
-            calculation to try to mimic the theoritical reflection.
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
             Use this parameter to test if this method can correctly mimic
-            the theoritical expectation.
+            the theoretical expectation.
+        simple_ext : bool, optional
+            If true replace the impedance of the taper and the 50 matched
+            impedance by the load impedance of the taper (zl). Should be close
+            to real case and should be faster (close to twice faster).
         """
 
         o = 2.*np.pi*f
 
-        # Obain the taper ABCD matrix
-        M = self.matrix_chain(o*prod, z)
+        if simple_ext:
 
-        # We end the chain by two elements:
-        # 1 - a load impedance to the ground
-        # 2 - a huge impedance to the circuit
-        M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
-        M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
+            # Replace the taper and the 50ohm matched impedance by the impedance
+            # of the taper end.
+            z = 1j*self.L_s*o + 1./(1./zl + 1j*o*self.C)
 
-        # We start the chain by two elements:
-        # 1 - The stray inductance
-        # 2 - The resonator capacitance to ground
-        M = np.dot(np.array([[1., 0.], [1j*o*self.C, 1.]]), M)
-        M = np.dot(np.array([[1., 1j*o*self.L_s], [0., 1.]]), M)
+        else:
 
-        # Return the z11 impedance element
-        return M.item(0)/M.item(2)
+            # Obain the taper ABCD matrix
+            M = self.matrix_chain(o*prod, z)
+
+            # We end the chain by two elements:
+            # 1 - a load impedance to the ground
+            # 2 - a huge impedance to the circuit
+            M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
+            M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
+
+            # We start the chain by two elements:
+            # 1 - The stray inductance
+            # 2 - The resonator capacitance to ground
+            M = np.dot(np.array([[1., 0.], [1j*o*self.C, 1.]]), M)
+            M = np.dot(np.array([[1., 1j*o*self.L_s], [0., 1.]]), M)
+
+            # Return the z11 impedance element
+            z = M.item(0)/M.item(2)
+
+        return z
 
 
 
@@ -160,8 +174,8 @@ def reflection_discretization(param):
 
 def external_discretization(param):
 
-    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, simple_ext,  f_p = param
 
     a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
-    return a.external_discretization(f, z, prod, zl, as_theory)
+    return a.external_discretization(f, z, prod, zl, as_theory, simple_ext)

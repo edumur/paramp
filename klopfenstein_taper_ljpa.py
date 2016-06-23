@@ -235,8 +235,8 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
     def reflection_theory(self, f):
         """
-        Return the theoritical reflection of the taper.
-        As a theoriticalk result this reflection doesn't take into account the
+        Return the theoretical reflection of the taper.
+        As a theoreticalk result this reflection doesn't take into account the
         impedance of the LJPA.
 
         Parameters
@@ -294,7 +294,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
 
 
-    def external_impedance(self, f, n=1e2, R0=50., as_theory=False):
+    def external_impedance(self, f, n=1e2, R0=50., as_theory=False, simple_ext=False):
         """
         Return the impedance of the electrical environment seen by the SQUID.
         We assume the circuit to be 50 ohm matched.
@@ -311,10 +311,14 @@ class KlopfensteinTaperLJPA(JPA, Find):
             The characteristic impedance of the incoming line. Assumed to be
             50 ohm.
         as_theory : bool, optional
-            If true use the load impedance of the characteristic impeance
-            calculation to try to mimic the theoritical reflection.
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
             Use this parameter to test if this method can correctly mimic
-            the theoritical expectation.
+            the theoretical expectation.
+        simple_ext : bool, optional
+            If true replace the impedance of the taper and the 50 matched
+            impedance by the load impedance of the taper (zl). Should be close
+            to real case and should be faster (close to twice faster).
         """
 
         # Calculate the different characteristic impedance of the different
@@ -352,6 +356,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
                                          itertools.repeat(self.theta_p),
                                          itertools.repeat(self.theta_s),
                                          itertools.repeat(as_theory),
+                                         itertools.repeat(simple_ext),
                                          itertools.repeat(self.f_p)))
 
         pool.close()
@@ -361,7 +366,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
 
 
-    def reflection(self, f, n=1e2, as_theory=False):
+    def reflection(self, f, n=1e2, as_theory=False, simple_ext=False):
         """
         Return the reflection of the taper.
         To do so, the taper impedance is discretised in n sections.
@@ -381,10 +386,14 @@ class KlopfensteinTaperLJPA(JPA, Find):
         n : float, optional
             Number of discret elements used to model the taper line.
         as_theory : bool, optional
-            If true use the load impedance of the characteristic impeance
-            calculation to try to mimic the theoritical reflection.
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
             Use this parameter to test if this method can correctly mimic
-            the theoritical expectation.
+            the theoretical expectation.
+        simple_ext : bool, optional
+            If true replace the impedance of the taper and the 50 matched
+            impedance by the load impedance of the taper (zl). Should be close
+            to real case and should be faster (close to twice faster).
         """
 
         # Calculate the different characteristic impedance of the different
@@ -407,7 +416,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
         # If the pump frequency is Non, we don't have to calculate the impedance
         # seen by the pumpistor
         if self.f_p is not None:
-            z_ext = self.external_impedance(f, n, 50., as_theory)
+            z_ext = self.external_impedance(f, n, 50., as_theory, simple_ext)
         else:
             z_ext = itertools.repeat(None)
 
@@ -456,10 +465,10 @@ class KlopfensteinTaperLJPA(JPA, Find):
             n : float, optional
                 Number of discret elements used to model the taper line.
             as_theory : bool, optional
-                If true use the load impedance of the characteristic impeance
-                calculation to try to mimic the theoritical reflection.
+                If true use the load impedance of the characteristic impedance
+                calculation to try to mimic the theoretical reflection.
                 Use this parameter to test if this method can correctly mimic
-                the theoritical expectation.
+                the theoretical expectation.
             """
 
             r = self.reflection(f, n, as_theory)
