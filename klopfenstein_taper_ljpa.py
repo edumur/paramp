@@ -538,6 +538,30 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
 
 
+    def internal_quality_factor(self, f=None, R0=50.):
+        """
+        Return the internal quality factor (Qi) of the equivalent resonator
+        formed by the SQUID, the stray inductance and the capacitance.
+        Since there is not dissipation in the model, Qi is related to the
+        flux pumped SQUID more than losses.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        """
+
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        return -(self.L_s+a)/2./b*(3 - (self.L_s+a)**2./(b**2.+(self.L_s+a)**2.))
+
+
+
     def reflection(self, f, n=1e2, as_theory=False, simple_ext=False):
         """
         Return the reflection of the taper.
