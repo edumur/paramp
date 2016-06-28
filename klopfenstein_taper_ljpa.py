@@ -344,7 +344,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
         # We need iterable frequency for the parallelization
         if isinstance(f, float):
-            
+
             return external_discretization((self.f_p - f, z, prod, self.zl,
                                             self.C, self.L_s, self.I_c, self.phi_s,
                                             self.phi_dc, self.phi_ac, self.theta_p,
@@ -486,6 +486,23 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
 
 
+    def equivalent_rlc(self, f=None, R0=50.):
+
+        z_ext = self.external_impedance(f, R0)
+
+        o0 = self.find_angular_resonance_frequency(R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        l_eq =  2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
+        c_eq = self.C/2.*(3. - (self.L_s + a)**2./(b**2. + (self.L_s + a)**2.))
+        r_eq = -o0*(self.L_s + a)**2./b
+
+        return r_eq, l_eq, c_eq
+
+
+
     def total_quality_factor(self, f=None, R0=50., n=1e2, as_theory=False):
         """
         Return the total quality factor (Qc) of the equivalent resonator
@@ -509,15 +526,18 @@ class KlopfensteinTaperLJPA(JPA, Find):
 
         # find the equivalent parallel coupling resistance and inductance at the
         # resonance frequency
-        rcoup = 1./np.real(1./self.coupling_impedance(n, as_theory))
-        lcoup = -1./self.find_angular_resonance_frequency(R0)/np.imag(1./self.coupling_impedance(n, as_theory))
+        z_coupling = self.coupling_impedance(n, as_theory)
+        r_eq, l_eq, c_eq = self.equivalent_rlc()
+
+        rcoup = 1./np.real(1./z_coupling)
+        lcoup = -1./self.find_angular_resonance_frequency(R0)/np.imag(1./z_coupling)
 
         # find the total resistance and inductance
-        rtot = 1./(1./self.equivalent_resistance(f, R0) + 1./rcoup)
-        ltot = 1./(1./self.equivalent_inductance(f, R0) + 1./lcoup)
+        rtot = 1./(1./r_eq + 1./rcoup)
+        ltot = 1./(1./l_eq + 1./lcoup)
 
         # find the total quality factor
-        return rtot*np.sqrt(self.equivalent_capacitance(f, R0)/ltot)
+        return rtot*np.sqrt(c_eq/ltot)
 
 
 
