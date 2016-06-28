@@ -321,6 +321,10 @@ class KlopfensteinTaperLJPA(JPA, Find):
             to real case and should be faster (close to twice faster).
         """
 
+        if self.f_p is None:
+
+            return None
+            
         # Calculate the different characteristic impedance of the different
         # part of the transnmission line
         # We inverse it because of the SQUID point of view
@@ -363,6 +367,198 @@ class KlopfensteinTaperLJPA(JPA, Find):
         pool.join()
 
         return np.array(result)
+
+
+
+
+    def coupling_impedance(self, n=1e2, as_theory=False):
+        """
+        Return the impedance of the environment seen by the LJPA
+
+        Parameters
+        ----------
+        n : float, optional
+            Number of discret elements used to model the taper line.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impeance
+            calculation to try to mimic the theoritical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        # Calculate the different characteristic impedance of the different
+        # part of the transnmission line
+        z = self.characteristic_impedance(np.linspace(0., self.l, n))
+
+        # Calculate the corresponding L_l and C_l for the elements
+        if as_theory:
+            ll = np.ones_like(z)*self.ll
+            cl = np.ones_like(z)*self.cl
+        else:
+            ll, cl = self.find_ll_cl(z)
+
+        prod = self.l*np.sqrt(ll*cl)/(n - 1.)
+        f = self.find_resonance_frequency()
+        param = (f, z, prod, self.zl, self.C, self.L_s,
+                                     self.I_c, self.phi_s, self.phi_dc,
+                                     self.phi_ac, self.theta_p, self.theta_s,
+                                     as_theory, self.f_p)
+        result = ljpa_external_discretization(param)
+
+        return result
+
+
+
+    def equivalent_resistance(self, f=None, R0=50.):
+        """
+        Return the resistance in ohm of the equivalente resonator formed by the
+        SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        """
+
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        o0 = self.find_angular_resonance_frequency(R0)
+
+        return -o0*(self.L_s + a)**2./b
+
+
+
+    def equivalent_capacitance(self, f=None, R0=50.):
+        """
+        Return the capacitance in farad of the equivalent resonator formed by
+        the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        """
+
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        return self.C/2.*(3. - (self.L_s + a)**2./(b**2. + (self.L_s + a)**2.))
+
+
+
+    def equivalent_inductance(self, f=None, R0=50.):
+        """
+        Return the inductance in henry of the equivalent resonator formed by
+        the SQUID, the stray inductance and the capacitance.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        """
+
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        return 2.*(self.L_s + a)/(3. - 1./(1. + (b/(self.L_s + a))**2.))
+
+
+
+    def total_quality_factor(self, f=None, R0=50., n=1e2, as_theory=False):
+        """
+        Return the total quality factor (Qc) of the equivalent resonator
+        formed by the SQUID, the stray inductance, the capacitance and the
+        Klopfenstein taper.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        n : float, optional
+            Number of discrete elements used to model the taper line.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        # find the equivalent parallel coupling resistance and inductance at the
+        # resonance frequency
+        rcoup = 1./np.real(1./self.coupling_impedance(n, as_theory))
+        lcoup = -1./self.find_angular_resonance_frequency(R0)/np.imag(1./self.coupling_impedance(n, as_theory))
+
+        # find the total resistance and inductance
+        rtot = 1./(1./self.equivalent_resistance(f, R0) + 1./rcoup)
+        ltot = 1./(1./self.equivalent_inductance(f, R0) + 1./lcoup)
+
+        # find the total quality factor
+        return rtot*np.sqrt(self.equivalent_capacitance(f, R0)/ltot)
+
+
+
+    def coupling_quality_factor(self, f=None, R0=50., n=1e2, as_theory=False):
+        """
+        Return the coupling quality factor (Qc) of the equivalent resonator
+        formed by the SQUID, the stray inductance, the capacitance and the
+        Klopfenstein taper.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        n : float, optional
+            Number of discrete elements used to model the taper line.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        return 1./(1./self.total_quality_factor(f, R0, n, as_theory)\
+                - 1./self.internal_quality_factor(f, R0))
+
+
+
+    def internal_quality_factor(self, f=None, R0=50.):
+        """
+        Return the internal quality factor (Qi) of the equivalent resonator
+        formed by the SQUID, the stray inductance and the capacitance.
+        Since there is not dissipation in the model, Qi is related to the
+        flux pumped SQUID more than losses.
+
+        Parameters
+        ----------
+        f : float, np.ndarray, optional
+            Signal frequency in hertz.
+            Is required in the non-degenerate case but optional for the
+            degenerate one.
+        """
+
+        z_ext = self.external_impedance(f, R0)
+
+        a = self.squid_inductance(f, z_ext).real
+        b = self.squid_inductance(f, z_ext).imag
+
+        return -(self.L_s+a)/2./b*(3 - (self.L_s+a)**2./(b**2.+(self.L_s+a)**2.))
 
 
 

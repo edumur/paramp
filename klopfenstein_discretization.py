@@ -52,6 +52,43 @@ class Klopfenstein_discretization(JPA):
         return reduce(np.dot, m)
 
 
+
+
+    def ljpa_external_discretization(self, f, z, prod, zl, as_theory):
+        """
+        Return the impedance of the electrical environment seen by the LJPA.
+        We assume the circuit to be 50 ohm matched.
+
+        Parameters
+        ----------
+        f : float
+            Signal frequency in hertz.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            50 ohm.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        o = 2.*np.pi*f
+
+        # Obtain the taper ABCD matrix
+        M = self.matrix_chain(o*prod, z)
+
+        # We end the chain by two elements:
+        # 1 - a load impedance to the ground
+        # 2 - a huge impedance to the circuit
+        M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
+        M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
+
+        # Return the z11 impedance element
+        return M.item(0)/M.item(2)
+
+
+
     def reflection_discretization(self, f, z_ext, z, prod, zl, as_theory):
         """
         Return the reflection of the Klopfenstein taper.
@@ -175,3 +212,13 @@ def external_discretization(param):
     a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
     return a.external_discretization(f, z, prod, zl, as_theory, simple_ext)
+
+
+
+def ljpa_external_discretization(param):
+
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+
+    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+
+    return a.ljpa_external_discretization(f, z, prod, zl, as_theory)
