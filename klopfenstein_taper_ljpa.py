@@ -343,33 +343,39 @@ class KlopfensteinTaperLJPA(JPA, Find):
         prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
         # We need iterable frequency for the parallelization
-        if type(f) is not np.ndarray:
-            f = np.array([f])
+        if isinstance(f, float):
+            
+            return external_discretization((self.f_p - f, z, prod, self.zl,
+                                            self.C, self.L_s, self.I_c, self.phi_s,
+                                            self.phi_dc, self.phi_ac, self.theta_p,
+                                            self.theta_s, as_theory, simple_ext,
+                                            self.f_p))
+        else:
 
-        # Create a pool a thread for fast computation
-        # We look at the impedance at the pump frequency
-        pool = Pool()
-        result = pool.map(external_discretization,
-                          itertools.izip(self.f_p - f,
-                                         itertools.repeat(z),
-                                         itertools.repeat(prod),
-                                         itertools.repeat(self.zl),
-                                         itertools.repeat(self.C),
-                                         itertools.repeat(self.L_s),
-                                         itertools.repeat(self.I_c),
-                                         itertools.repeat(self.phi_s),
-                                         itertools.repeat(self.phi_dc),
-                                         itertools.repeat(self.phi_ac),
-                                         itertools.repeat(self.theta_p),
-                                         itertools.repeat(self.theta_s),
-                                         itertools.repeat(as_theory),
-                                         itertools.repeat(simple_ext),
-                                         itertools.repeat(self.f_p)))
+            # Create a pool a thread for fast computation
+            # We look at the impedance at the pump frequency
+            pool = Pool()
+            result = pool.map(external_discretization,
+                              itertools.izip(self.f_p - f,
+                                             itertools.repeat(z),
+                                             itertools.repeat(prod),
+                                             itertools.repeat(self.zl),
+                                             itertools.repeat(self.C),
+                                             itertools.repeat(self.L_s),
+                                             itertools.repeat(self.I_c),
+                                             itertools.repeat(self.phi_s),
+                                             itertools.repeat(self.phi_dc),
+                                             itertools.repeat(self.phi_ac),
+                                             itertools.repeat(self.theta_p),
+                                             itertools.repeat(self.theta_s),
+                                             itertools.repeat(as_theory),
+                                             itertools.repeat(simple_ext),
+                                             itertools.repeat(self.f_p)))
 
-        pool.close()
-        pool.join()
+            pool.close()
+            pool.join()
 
-        return np.array(result)
+            return np.array(result)
 
 
 
@@ -609,43 +615,51 @@ class KlopfensteinTaperLJPA(JPA, Find):
         prod = self.l*np.sqrt(ll*cl)/(n - 1.)
 
         # We need iterable frequency for the parallelization
-        if type(f) is not np.ndarray:
-            f = np.array([f])
+        if isinstance(f, float):
 
-        # If the pump frequency is Non, we don't have to calculate the impedance
-        # seen by the pumpistor
-        if self.f_p is not None:
-            z_ext = self.external_impedance(f, n, 50., as_theory, simple_ext)
+            # If the pump frequency is None, we don't have to calculate the impedance
+            # seen by the pumpistor
+            if self.f_p is not None:
+                z_ext = self.external_impedance(f, n, 50., as_theory, simple_ext)
+            else:
+                z_ext = None
+
+            return reflection_discretization((f, z_ext, z, prod, self.zl, self.C,
+                                              self.L_s, self.I_c, self.phi_s,
+                                              self.phi_dc, self.phi_ac, self.theta_p,
+                                              self.theta_s, as_theory, self.f_p))
         else:
-            z_ext = itertools.repeat(None)
 
-        # Create a pool a thread for fast computation
-        pool = Pool()
-        result = pool.map(reflection_discretization,
-                          itertools.izip(f,
-                                         z_ext,
-                                         itertools.repeat(z),
-                                         itertools.repeat(prod),
-                                         itertools.repeat(self.zl),
-                                         itertools.repeat(self.C),
-                                         itertools.repeat(self.L_s),
-                                         itertools.repeat(self.I_c),
-                                         itertools.repeat(self.phi_s),
-                                         itertools.repeat(self.phi_dc),
-                                         itertools.repeat(self.phi_ac),
-                                         itertools.repeat(self.theta_p),
-                                         itertools.repeat(self.theta_s),
-                                         itertools.repeat(as_theory),
-                                         itertools.repeat(self.f_p)))
+            # If the pump frequency is None, we don't have to calculate the impedance
+            # seen by the pumpistor
+            if self.f_p is not None:
+                z_ext = self.external_impedance(f, n, 50., as_theory, simple_ext)
+            else:
+                z_ext = itertools.repeat(None)
 
-        pool.close()
-        pool.join()
+            # Create a pool a thread for fast computation
+            pool = Pool()
+            result = pool.map(reflection_discretization,
+                              itertools.izip(f,
+                                             z_ext,
+                                             itertools.repeat(z),
+                                             itertools.repeat(prod),
+                                             itertools.repeat(self.zl),
+                                             itertools.repeat(self.C),
+                                             itertools.repeat(self.L_s),
+                                             itertools.repeat(self.I_c),
+                                             itertools.repeat(self.phi_s),
+                                             itertools.repeat(self.phi_dc),
+                                             itertools.repeat(self.phi_ac),
+                                             itertools.repeat(self.theta_p),
+                                             itertools.repeat(self.theta_s),
+                                             itertools.repeat(as_theory),
+                                             itertools.repeat(self.f_p)))
 
-        # If the user sent a float frequency, we return a float
-        if len(result) == 1:
-            return result[0]
-        # If the user a np.ndarray frequency, we return a np.ndarray
-        else:
+            pool.close()
+            pool.join()
+
+            # If the user a np.ndarray frequency, we return a np.ndarray
             return np.array(result)
 
 
