@@ -32,7 +32,10 @@ import itertools
 
 from JPA import JPA
 from find import Find
-from klopfenstein_discretization import reflection_discretization, external_discretization
+from klopfenstein_discretization import (reflection_discretization,
+                                         external_discretization,
+                                         ljpa_external_discretization)
+
 
 class KlopfensteinTaperLJPA(JPA, Find):
 
@@ -324,7 +327,7 @@ class KlopfensteinTaperLJPA(JPA, Find):
         if self.f_p is None:
 
             return None
-            
+
         # Calculate the different characteristic impedance of the different
         # part of the transnmission line
         # We inverse it because of the SQUID point of view
