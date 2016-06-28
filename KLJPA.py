@@ -37,7 +37,7 @@ from klopfenstein_discretization import (reflection_discretization,
                                          ljpa_external_discretization)
 
 
-class KlopfensteinTaperLJPA(JPA, Find):
+class KLJPA(JPA, Find):
 
 
 
