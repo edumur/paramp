@@ -195,6 +195,184 @@ class Klopfenstein_discretization(JPA):
 
 
 
+class Wb_klopfenstein_discretization(JPA):
+
+
+
+    def __init__(self, f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s,
+                 L_b):
+
+        JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+
+        self.C   = C
+        self.L_s = L_s
+        self.f_p = f_p
+        self.L_b = L_b
+
+
+    def matrix_chain(self, arg, z):
+        """
+        Return the ABCD matrix of the taper
+        """
+
+        # Calculate the chain of matrices representing the Klopfenstein tapper
+        m = np.array([np.cos(arg), 1j*z*np.sin(arg), 1j/z*np.sin(arg), np.cos(arg)])
+
+        # Give the good shape to the array for the matrix product
+        m = m.transpose()
+        m.shape = (len(z), 2, 2)
+
+        # Calculate the chain matrix prodcut
+        return reduce(np.dot, m)
+
+
+
+    def ljpa_external_discretization(self, f, z, prod, zl, as_theory):
+        """
+        Return the impedance of the electrical environment seen by the LJPA.
+        We assume the circuit to be 50 ohm matched.
+
+        Parameters
+        ----------
+        f : float
+            Signal frequency in hertz.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            50 ohm.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        o = 2.*np.pi*f
+
+        # Obtain the taper ABCD matrix
+        M = self.matrix_chain(o*prod, z)
+
+        # We end the chain by three elements:
+        # 1 - a load impedance to the ground
+        # 2 - a huge impedance to the circuit
+        M = np.dot(M, np.array([[1, self.L_b],[0, 1]]))
+        M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
+        M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
+
+        # Return the z11 impedance element
+        return M.item(0)/M.item(2)
+
+
+
+    def reflection_discretization(self, f, z_ext, z, prod, zl, as_theory):
+        """
+        Return the reflection of the circuit.
+        To do so, the taper impedance is discretised in n sections.
+        Each of these sections is modeled as a lossless transmission line.
+        At the end the LJPA is modeled as a lumped element to ground and very
+        high impedance (1e99 ohm) to the line.
+
+        Parameters
+        ----------
+        f : float
+            Signal frequency in GHz.
+        z_ext : float
+            Impedance seen by the pumpistor at the idler frequency
+        ll : np.ndarray
+            Inductance per unit length along the taper length in henry per meter
+        cl : np.ndarray
+            Capacitance per unit length along the taper length in farad per meter
+        zl : float
+            Load impedance
+        as_theory : bool
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        """
+
+        o = 2.*np.pi*f
+
+        # Obtain the taper ABCD matrix
+        M = self.matrix_chain(o*prod, z)
+
+        # Calculate the LJPA impedance
+        z_ljpa = 1./(1j*self.C*o + 1./(1j*o*(self.L_s + self.squid_inductance(f, z_ext))))
+
+        # We end the chain by two elements:
+        # 1 - a load impedance to the ground
+        if as_theory:
+            M = np.dot(M, np.array([[1., 0.],[1./zl, 1.]]))
+        else:
+            M = np.dot(M, np.array([[1., 0.],[1./z_ljpa, 1.]]))
+
+        # We start the chain with the wirebond inductance
+        M = np.dot(np.array([[1, self.L_b],[0, 1]]), M)
+
+        # Compute the reflection from the array elements
+        a = M.item(0)
+        b = M.item(1)
+        c = M.item(2)
+        d = M.item(3)
+
+        return (a + b/50. - c*50. - d)/(a + b/50. + c*50. + d)
+
+
+
+    def external_discretization(self, f, z, prod, zl, as_theory, simple_ext):
+        """
+        Return the impedance of the electrical environment seen by the SQUID.
+        We assume the circuit to be 50 ohm matched.
+
+        Parameters
+        ----------
+        f : float
+            Signal frequency in hertz.
+        R0 : float, optional
+            The characteristic impedance of the incoming line. Assumed to be
+            50 ohm.
+        as_theory : bool, optional
+            If true use the load impedance of the characteristic impedance
+            calculation to try to mimic the theoretical reflection.
+            Use this parameter to test if this method can correctly mimic
+            the theoretical expectation.
+        simple_ext : bool, optional
+            If true replace the impedance of the taper and the 50 matched
+            impedance by the load impedance of the taper (zl). Should be close
+            to real case and should be faster (close to twice faster).
+        """
+
+        o = 2.*np.pi*f
+
+        if simple_ext:
+
+            # Replace the taper and the 50ohm matched impedance by the impedance
+            # of the taper end.
+            z = 1j*self.L_s*o + 1./(1./zl + 1j*o*self.C)
+
+        else:
+
+            # Obtain the taper ABCD matrix
+            M = self.matrix_chain(o*prod, z)
+
+            # We end the chain by two elements:
+            # 1 - The wirebond inductance
+            # 2 - a load impedance to the ground
+            M = np.dot(M, np.array([[1, self.L_b],[0, 1]]))
+            M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
+
+            # We start the chain by two elements:
+            # 1 - The stray inductance
+            # 2 - The resonator capacitance to ground
+            M = np.dot(np.array([[1., 0.], [1j*o*self.C, 1.]]), M)
+            M = np.dot(np.array([[1., 1j*o*self.L_s], [0., 1.]]), M)
+
+            # Return the z11 impedance element
+            z = M.item(0)/M.item(2)
+
+        return z
+
+
+
 def reflection_discretization(param):
 
     f, z_ext, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
@@ -220,5 +398,35 @@ def ljpa_external_discretization(param):
     f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
 
     a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+
+    return a.ljpa_external_discretization(f, z, prod, zl, as_theory)
+
+
+
+def wb_reflection_discretization(param):
+
+    f, z_ext, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p, L_b = param
+
+    a = Wb_klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
+
+    return a.reflection_discretization(f, z_ext, z, prod, zl, as_theory)
+
+
+
+def wb_external_discretization(param):
+
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, simple_ext, f_p, L_b = param
+
+    a = Wb_klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
+
+    return a.external_discretization(f, z, prod, zl, as_theory, simple_ext)
+
+
+
+def wb_ljpa_external_discretization(param):
+
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p, L_b = param
+
+    a = Wb_klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
 
     return a.ljpa_external_discretization(f, z, prod, zl, as_theory)
