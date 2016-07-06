@@ -43,7 +43,7 @@ class KLJPA(JPA, Find):
 
     def __init__(self, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p,
                        Z_l, l, g_m, L_l, C_l,
-                       theta_s=0., f_p=None):
+                       theta_s=0., f_p=None, L_b=0.):
         """
         Implementation of the Klopfenstein taper from R. W. Klopfenstein:
         "A Transmission Line Taper of Improved Design"
@@ -86,6 +86,8 @@ class KLJPA(JPA, Find):
             the signal phase is the reference.
         f_p : float, optional
             Pump frequency. If None we assume  f_p = 2*f_s.
+        L_b : float, optional
+            Wirebond inductance in henry.
 
         Raises
         ------
@@ -103,6 +105,8 @@ class KLJPA(JPA, Find):
             raise ValueError('L_l parameter must be float type.')
         if not isinstance(C_l, float):
             raise ValueError('C_l parameter must be float type.')
+        if not isinstance(L_b, float):
+            raise ValueError('L_b parameter must be float type.')
 
         JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
@@ -117,7 +121,7 @@ class KLJPA(JPA, Find):
 
         self.f_p = f_p
 
-
+        self.L_b = L_b
 
 
 
@@ -349,7 +353,7 @@ class KLJPA(JPA, Find):
                                             self.C, self.L_s, self.I_c, self.phi_s,
                                             self.phi_dc, self.phi_ac, self.theta_p,
                                             self.theta_s, as_theory, simple_ext,
-                                            self.f_p))
+                                            self.f_p, self.L_b))
         else:
 
             # Create a pool a thread for fast computation
@@ -370,7 +374,8 @@ class KLJPA(JPA, Find):
                                              itertools.repeat(self.theta_s),
                                              itertools.repeat(as_theory),
                                              itertools.repeat(simple_ext),
-                                             itertools.repeat(self.f_p)))
+                                             itertools.repeat(self.f_p),
+                                             itertools.repeat(self.L_b)))
 
             pool.close()
             pool.join()
@@ -411,7 +416,7 @@ class KLJPA(JPA, Find):
         param = (f, z, prod, self.zl, self.C, self.L_s,
                                      self.I_c, self.phi_s, self.phi_dc,
                                      self.phi_ac, self.theta_p, self.theta_s,
-                                     as_theory, self.f_p)
+                                     as_theory, self.f_p, self.L_b)
         result = ljpa_external_discretization(param)
 
         return result
@@ -647,7 +652,8 @@ class KLJPA(JPA, Find):
             return reflection_discretization((f, z_ext, z, prod, self.zl, self.C,
                                               self.L_s, self.I_c, self.phi_s,
                                               self.phi_dc, self.phi_ac, self.theta_p,
-                                              self.theta_s, as_theory, self.f_p))
+                                              self.theta_s, as_theory, self.f_p,
+                                              self.L_b))
         else:
 
             # If the pump frequency is None, we don't have to calculate the impedance
@@ -674,7 +680,8 @@ class KLJPA(JPA, Find):
                                              itertools.repeat(self.theta_p),
                                              itertools.repeat(self.theta_s),
                                              itertools.repeat(as_theory),
-                                             itertools.repeat(self.f_p)))
+                                             itertools.repeat(self.f_p),
+                                             itertools.repeat(self.L_b)))
 
             pool.close()
             pool.join()

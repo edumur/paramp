@@ -26,14 +26,14 @@ class Klopfenstein_discretization(JPA):
 
 
 
-    def __init__(self, f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s):
+    def __init__(self, f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b):
 
         JPA.__init__(self, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
 
         self.C   = C
         self.L_s = L_s
         self.f_p = f_p
-
+        self.L_b = L_b
 
 
     def matrix_chain(self, arg, z):
@@ -78,9 +78,11 @@ class Klopfenstein_discretization(JPA):
         # Obtain the taper ABCD matrix
         M = self.matrix_chain(o*prod, z)
 
-        # We end the chain by two elements:
-        # 1 - a load impedance to the ground
-        # 2 - a huge impedance to the circuit
+        # We end the chain by three elements:
+        # 1 - a wirebond inductance
+        # 2 - a load impedance to the ground
+        # 3 - a huge impedance to the circuit
+        M = np.dot(M, np.array([[1., 1j*o*self.L_b],[0., 1.]]))
         M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
         M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
 
@@ -131,6 +133,8 @@ class Klopfenstein_discretization(JPA):
         else:
             M = np.dot(M, np.array([[1., 0.],[1./z_ljpa, 1.]]))
 
+        # We start the chain with the wirebond inductance
+        M = np.dot(np.array([[1., 1j*o*self.L_b],[0., 1.]]), M)
 
         # Compute the reflection from the array elements
         a = M.item(0)
@@ -179,7 +183,9 @@ class Klopfenstein_discretization(JPA):
             M = self.matrix_chain(o*prod, z)
 
             # We end the chain by two elements:
-            # 1 - a load impedance to the ground
+            # 1 - The wirebond inductance
+            # 2 - a load impedance to the ground
+            M = np.dot(M, np.array([[1., 1j*o*self.L_b],[0., 1.]]))
             M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
 
             # We start the chain by two elements:
@@ -197,9 +203,9 @@ class Klopfenstein_discretization(JPA):
 
 def reflection_discretization(param):
 
-    f, z_ext, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+    f, z_ext, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p, L_b = param
 
-    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
 
     return a.reflection_discretization(f, z_ext, z, prod, zl, as_theory)
 
@@ -207,9 +213,9 @@ def reflection_discretization(param):
 
 def external_discretization(param):
 
-    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, simple_ext,  f_p = param
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, simple_ext,  f_p, L_b = param
 
-    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
 
     return a.external_discretization(f, z, prod, zl, as_theory, simple_ext)
 
@@ -217,8 +223,8 @@ def external_discretization(param):
 
 def ljpa_external_discretization(param):
 
-    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p = param
+    f, z, prod, zl, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, as_theory, f_p, L_b = param
 
-    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s)
+    a = Klopfenstein_discretization(f_p, C, L_s, I_c, phi_s, phi_dc, phi_ac, theta_p, theta_s, L_b)
 
     return a.ljpa_external_discretization(f, z, prod, zl, as_theory)
