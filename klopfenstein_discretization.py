@@ -82,7 +82,7 @@ class Klopfenstein_discretization(JPA):
         # 1 - a wirebond inductance
         # 2 - a load impedance to the ground
         # 3 - a huge impedance to the circuit
-        M = np.dot(M, np.array([[1, 1j*o*self.L_b],[0, 1]]))
+        M = np.dot(M, np.array([[1., 1j*o*self.L_b],[0., 1.]]))
         M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
         M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
 
@@ -134,7 +134,7 @@ class Klopfenstein_discretization(JPA):
             M = np.dot(M, np.array([[1., 0.],[1./z_ljpa, 1.]]))
 
         # We start the chain with the wirebond inductance
-        M = np.dot(np.array([[1, 1j*o*self.L_b],[0, 1]]), M)
+        M = np.dot(np.array([[1., 1j*o*self.L_b],[0., 1.]]), M)
 
         # Compute the reflection from the array elements
         a = M.item(0)
@@ -185,7 +185,7 @@ class Klopfenstein_discretization(JPA):
             # We end the chain by two elements:
             # 1 - The wirebond inductance
             # 2 - a load impedance to the ground
-            M = np.dot(M, np.array([[1, 1j*o*self.L_b],[0, 1]]))
+            M = np.dot(M, np.array([[1., 1j*o*self.L_b],[0., 1.]]))
             M = np.dot(M, np.array([[1., 0.],[1./50., 1.]]))
 
             # We start the chain by two elements:
