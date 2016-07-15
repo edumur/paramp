@@ -691,7 +691,7 @@ class KLJPA(JPA, Find):
 
 
 
-    def impedance(self, f, R0=50, n=1e2, as_theory=False):
+    def impedance(self, f, R0=50, n=1e2, as_theory=False, simple_ext=False):
             """
             Return the impedance of the taper.
 
@@ -711,7 +711,7 @@ class KLJPA(JPA, Find):
                 the theoretical expectation.
             """
 
-            r = self.reflection(f, n, as_theory)
+            r = self.reflection(f, n, as_theory, simple_ext)
 
             return R0*(1+r)/(1-r)
 
