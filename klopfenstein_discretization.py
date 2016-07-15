@@ -128,10 +128,12 @@ class Klopfenstein_discretization(JPA):
 
         # We end the chain by two elements:
         # 1 - a load impedance to the ground
+        # 2 - a huge impedance to the circuit
         if as_theory:
             M = np.dot(M, np.array([[1., 0.],[1./zl, 1.]]))
         else:
             M = np.dot(M, np.array([[1., 0.],[1./z_ljpa, 1.]]))
+        M = np.dot(M, np.array([[1., 1e99],[0., 1.]]))
 
         # We start the chain with the wirebond inductance
         M = np.dot(np.array([[1., 1j*o*self.L_b],[0., 1.]]), M)
