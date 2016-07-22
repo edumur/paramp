@@ -54,6 +54,17 @@ class Window(object):
                            L_s=self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
                            f_p=self.builder.get_object('spinbuttonf_p').get_value()*1e9)
 
+        self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
+                           'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
+                           'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
+                           'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
+                           'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
+                           'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
+                           'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
+                           'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9}
+
+        self.builder.get_object('entry1').set_text(str(self.parameters))
+
         # Start of Matplotlib specific code
         self.fig, (self.ax1, self.ax2, self.ax3, self.ax4) = plt.subplots(4, 1, sharex=True)
         # figure = Figure()#figsize=(8, 6), dpi=71)
@@ -176,6 +187,23 @@ class Window(object):
                                 L_l=4.21e-7,
                                 L_b=self.builder.get_object('spinbuttonL_b').get_value()*1e-9)
 
+            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
+                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
+                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
+                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
+                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
+                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
+                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
+                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9,
+                               'Z_l' : self.builder.get_object('spinbuttonz_l').get_value(),
+                               'l' : self.builder.get_object('spinbuttonl').get_value()*1e-2,
+                               'g_m' : self.builder.get_object('spinbuttong_m').get_value(),
+                               'C_l' : 1.66e-10,
+                               'L_l' : 4.21e-7,
+                               'L_b' : self.builder.get_object('spinbuttonL_b').get_value()*1e-9}
+
+            self.builder.get_object('entry1').set_text(str(self.parameters))
+
         else:
 
             self.builder.get_object('box21').set_sensitive(False)
@@ -202,8 +230,41 @@ class Window(object):
                                L_s=self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
                                f_p=self.builder.get_object('spinbuttonf_p').get_value()*1e9)
 
+            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
+                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
+                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
+                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
+                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
+                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
+                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
+                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9}
+
+
+            self.builder.get_object('entry1').set_text(str(self.parameters))
+
         self.update_plot()
 
+
+    def button2_clicked(self, button):
+
+        p = eval(self.builder.get_object('entry1').get_text())
+
+        self.freeze_plot = True
+        self.builder.get_object('spinbuttonI_c').set_value(p['I_c']*1e6)
+        self.builder.get_object('spinbuttonphi_dc').set_value(p['phi_dc'])
+        self.builder.get_object('spinbuttonphi_p').set_value(p['phi_ac'])
+        self.builder.get_object('spinbuttonphi_s').set_value(p['phi_s'])
+        self.builder.get_object('spinbuttontheta_p').set_value(p['theta_p'])
+        self.builder.get_object('spinbuttonC').set_value(p['C']*1e12)
+        self.builder.get_object('spinbuttonL_s').set_value(p['L_s']*1e12)
+        self.builder.get_object('spinbuttonf_p').set_value(p['f_p']*1e-9)
+        self.builder.get_object('spinbuttonz_l').set_value(p['Z_l'])
+        self.builder.get_object('spinbuttonl').set_value(p['l']*1e2)
+        self.builder.get_object('spinbuttong_m').set_value(p['g_m'])
+        self.builder.get_object('spinbuttonL_b').set_value(p['L_b']*1e9)
+        self.freeze_plot = False
+
+        self.update_plot()
 
 
     def spinbuttonC_changed(self, spinbutton):
