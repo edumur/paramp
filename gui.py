@@ -187,21 +187,6 @@ class Window(object):
                                 L_l=4.21e-7,
                                 L_b=self.builder.get_object('spinbuttonL_b').get_value()*1e-9)
 
-            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
-                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
-                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
-                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
-                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
-                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
-                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
-                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9,
-                               'Z_l' : self.builder.get_object('spinbuttonz_l').get_value(),
-                               'l' : self.builder.get_object('spinbuttonl').get_value()*1e-2,
-                               'g_m' : self.builder.get_object('spinbuttong_m').get_value(),
-                               'C_l' : 1.66e-10,
-                               'L_l' : 4.21e-7,
-                               'L_b' : self.builder.get_object('spinbuttonL_b').get_value()*1e-9}
-
             self.builder.get_object('entry1').set_text(str(self.parameters))
 
         else:
@@ -229,18 +214,6 @@ class Window(object):
                                C=self.builder.get_object('spinbuttonC').get_value()*1e-12,
                                L_s=self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
                                f_p=self.builder.get_object('spinbuttonf_p').get_value()*1e9)
-
-            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
-                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
-                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
-                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
-                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
-                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
-                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
-                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9}
-
-
-            self.builder.get_object('entry1').set_text(str(self.parameters))
 
         self.update_plot()
 
@@ -415,6 +388,36 @@ class Window(object):
 
             self.line_20.set_data([f[0]/1e9, f[-1.]/1e9], [20., 20.])
             self.canvas.draw()
+
+        if self.builder.get_object('checkbutton2').get_active():
+
+            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
+                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
+                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
+                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
+                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
+                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
+                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
+                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9,
+                               'Z_l' : self.builder.get_object('spinbuttonz_l').get_value(),
+                               'l' : self.builder.get_object('spinbuttonl').get_value()*1e-2,
+                               'g_m' : self.builder.get_object('spinbuttong_m').get_value(),
+                               'C_l' : 1.66e-10,
+                               'L_l' : 4.21e-7,
+                               'L_b' : self.builder.get_object('spinbuttonL_b').get_value()*1e-9}
+        else:
+
+            self.parameters = {'I_c' : self.builder.get_object('spinbuttonI_c').get_value()*1e-6,
+                               'phi_dc' : self.builder.get_object('spinbuttonphi_dc').get_value(),
+                               'phi_ac' : self.builder.get_object('spinbuttonphi_p').get_value(),
+                               'phi_s' : self.builder.get_object('spinbuttonphi_s').get_value(),
+                               'theta_p' : self.builder.get_object('spinbuttontheta_p').get_value(),
+                               'C' : self.builder.get_object('spinbuttonC').get_value()*1e-12,
+                               'L_s' : self.builder.get_object('spinbuttonL_s').get_value()*1e-12,
+                               'f_p' : self.builder.get_object('spinbuttonf_p').get_value()*1e9}
+
+
+        self.builder.get_object('entry1').set_text(str(self.parameters))
 
 
     def optimization(self, button):
